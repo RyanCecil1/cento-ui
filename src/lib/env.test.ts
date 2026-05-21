@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { parseEnv } from "./env";
+// @vitest-environment node
+
+import { describe, expect, it, vi } from "vitest";
+import { env, getEnv, parseEnv } from "./env";
 
 describe("parseEnv", () => {
   it("requires the production integration keys the app cannot boot without", () => {
@@ -24,5 +26,52 @@ describe("parseEnv", () => {
         SMS_PROVIDER_API_KEY: "sms-api-key",
       }),
     ).toThrow("Invalid environment variable: NEXT_PUBLIC_SUPABASE_URL");
+  });
+});
+
+describe("lazy env loading", () => {
+  it("does not validate process.env until runtime access", async () => {
+    const originalEnv = { ...process.env };
+    try {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      delete process.env.SMS_PROVIDER_BASE_URL;
+      delete process.env.SMS_PROVIDER_API_KEY;
+
+      vi.resetModules();
+
+      const importModule = async () => import("./env");
+
+      await expect(importModule()).resolves.toBeTypeOf("object");
+
+      const envModule = await importModule();
+
+      expect(() => envModule.getEnv()).toThrow(
+        "Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL",
+      );
+    } finally {
+      process.env = originalEnv;
+      vi.resetModules();
+    }
+  });
+
+  it("caches validated runtime env access", () => {
+    const originalEnv = { ...process.env };
+
+    try {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+      process.env.SMS_PROVIDER_BASE_URL = "https://sms.example.com";
+      process.env.SMS_PROVIDER_API_KEY = "sms-api-key";
+
+      expect(getEnv()).toBe(getEnv());
+      expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe(
+        getEnv().NEXT_PUBLIC_SUPABASE_URL,
+      );
+    } finally {
+      process.env = originalEnv;
+    }
   });
 });
