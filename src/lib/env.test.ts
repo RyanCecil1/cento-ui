@@ -13,4 +13,16 @@ describe("parseEnv", () => {
       }),
     ).toThrow("Missing required environment variable");
   });
+
+  it("rejects malformed integration URLs distinctly from missing values", () => {
+    expect(() =>
+      parseEnv({
+        NEXT_PUBLIC_SUPABASE_URL: "not-a-url",
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
+        SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+        SMS_PROVIDER_BASE_URL: "https://sms.example.com",
+        SMS_PROVIDER_API_KEY: "sms-api-key",
+      }),
+    ).toThrow("Invalid environment variable: NEXT_PUBLIC_SUPABASE_URL");
+  });
 });
