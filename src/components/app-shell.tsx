@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, Command, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import { appNavGroups } from "@/data/site";
 import { ThemeToggle } from "./theme-toggle";
@@ -12,6 +15,8 @@ export function AppShell({
   subtitle: string;
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
     <div className="app-root min-h-[100dvh]">
       <div className="grid min-h-[100dvh] lg:grid-cols-[248px_1fr]">
@@ -35,16 +40,24 @@ export function AppShell({
                   {group.title}
                 </p>
                 <div className="mt-3 space-y-1">
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--app-muted)] hover:bg-[var(--app-hover)] hover:text-[var(--app-text)]"
-                    >
-                      <item.icon size={17} weight="bold" />
-                      {item.label}
-                    </Link>
-                  ))}
+                  {group.items.map((item) => {
+                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+                          isActive
+                            ? "bg-primary/12 text-primary"
+                            : "text-[var(--app-muted)] hover:bg-[var(--app-hover)] hover:text-[var(--app-text)]"
+                        }`}
+                      >
+                        <item.icon size={17} weight="bold" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             ))}
