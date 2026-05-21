@@ -7,7 +7,6 @@ create table campaigns (
   template_id uuid,
   message_body text not null default '',
   personalization_fallback jsonb not null default '{}'::jsonb,
-  audience_group_ids uuid[] not null default '{}',
   audience_filters jsonb not null default '[]'::jsonb,
   scheduled_for timestamptz,
   state text not null default 'draft',
@@ -54,6 +53,25 @@ execute function set_current_timestamp_updated_at();
 create index campaigns_workspace_id_idx on campaigns (workspace_id);
 create index campaigns_workspace_state_idx on campaigns (workspace_id, state);
 create index campaigns_workspace_scheduled_for_idx on campaigns (workspace_id, scheduled_for);
+
+create table campaign_audience_groups (
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  campaign_id uuid not null,
+  group_id uuid not null,
+  created_at timestamptz not null default now(),
+  primary key (campaign_id, group_id),
+  constraint campaign_audience_groups_workspace_campaign_fkey
+    foreign key (workspace_id, campaign_id)
+    references campaigns(workspace_id, id)
+    on delete cascade,
+  constraint campaign_audience_groups_workspace_group_fkey
+    foreign key (workspace_id, group_id)
+    references contact_groups(workspace_id, id)
+    on delete cascade
+);
+
+create index campaign_audience_groups_workspace_group_idx
+  on campaign_audience_groups (workspace_id, group_id);
 
 create table campaign_jobs (
   id uuid primary key default gen_random_uuid(),

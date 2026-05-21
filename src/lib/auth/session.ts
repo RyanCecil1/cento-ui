@@ -1,9 +1,13 @@
 import "server-only";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createRequestSupabaseAuthClient } from "@/lib/supabase/server";
 
-export async function requireOwnerSession() {
-  const supabase = createServerSupabaseClient();
+export async function requireOwnerSession(accessToken: string) {
+  if (!accessToken.trim()) {
+    throw new Error("Authentication required");
+  }
+
+  const supabase = createRequestSupabaseAuthClient(accessToken);
   const {
     data: { user },
   } = await supabase.auth.getUser();
