@@ -1,7 +1,10 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
-import { env, getEnv, parseEnv } from "./env";
+
+vi.mock("server-only", () => ({}));
+
+import { parseEnv } from "./env";
 
 describe("parseEnv", () => {
   it("requires the production integration keys the app cannot boot without", () => {
@@ -12,6 +15,7 @@ describe("parseEnv", () => {
         SUPABASE_SERVICE_ROLE_KEY: "",
         SMS_PROVIDER_BASE_URL: "",
         SMS_PROVIDER_API_KEY: "",
+        PAYMENT_PROVIDER_WEBHOOK_SECRET: "",
       }),
     ).toThrow("Missing required environment variable");
   });
@@ -24,6 +28,7 @@ describe("parseEnv", () => {
         SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
         SMS_PROVIDER_BASE_URL: "https://sms.example.com",
         SMS_PROVIDER_API_KEY: "sms-api-key",
+        PAYMENT_PROVIDER_WEBHOOK_SECRET: "webhook-secret",
       }),
     ).toThrow("Invalid environment variable: NEXT_PUBLIC_SUPABASE_URL");
   });
@@ -38,6 +43,7 @@ describe("lazy env loading", () => {
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
       delete process.env.SMS_PROVIDER_BASE_URL;
       delete process.env.SMS_PROVIDER_API_KEY;
+      delete process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET;
 
       vi.resetModules();
 
@@ -56,7 +62,7 @@ describe("lazy env loading", () => {
     }
   });
 
-  it("caches validated runtime env access", () => {
+  it("caches validated runtime env access even if process.env changes later", async () => {
     const originalEnv = { ...process.env };
 
     try {
@@ -65,13 +71,26 @@ describe("lazy env loading", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
       process.env.SMS_PROVIDER_BASE_URL = "https://sms.example.com";
       process.env.SMS_PROVIDER_API_KEY = "sms-api-key";
+      process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET = "webhook-secret";
 
-      expect(getEnv()).toBe(getEnv());
-      expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe(
-        getEnv().NEXT_PUBLIC_SUPABASE_URL,
+      vi.resetModules();
+
+      const envModule = await import("./env");
+      const firstEnv = envModule.getEnv();
+
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://mutated.supabase.co";
+      process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET = "mutated-webhook-secret";
+
+      expect(envModule.getEnv()).toBe(firstEnv);
+      expect(envModule.env.NEXT_PUBLIC_SUPABASE_URL).toBe(
+        "https://example.supabase.co",
+      );
+      expect(envModule.env.PAYMENT_PROVIDER_WEBHOOK_SECRET).toBe(
+        "webhook-secret",
       );
     } finally {
       process.env = originalEnv;
+      vi.resetModules();
     }
   });
 });

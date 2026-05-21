@@ -1,3 +1,4 @@
+import "server-only";
 import { z } from "zod";
 
 const EnvSchema = z.object({
@@ -6,6 +7,7 @@ const EnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SMS_PROVIDER_BASE_URL: z.string().url(),
   SMS_PROVIDER_API_KEY: z.string().min(1),
+  PAYMENT_PROVIDER_WEBHOOK_SECRET: z.string().min(1),
 });
 
 type Env = z.infer<typeof EnvSchema>;
@@ -52,5 +54,8 @@ export const env = {
   },
   get SMS_PROVIDER_API_KEY() {
     return getEnv().SMS_PROVIDER_API_KEY;
+  },
+  get PAYMENT_PROVIDER_WEBHOOK_SECRET() {
+    return getEnv().PAYMENT_PROVIDER_WEBHOOK_SECRET;
   },
 };
