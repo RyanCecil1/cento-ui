@@ -31,5 +31,19 @@ export async function requireOwnerSession() {
     throw new Error("Authentication required");
   }
 
-  return { userId: user.id };
+  const { data: workspace, error: workspaceError } = await supabase
+    .from("workspaces")
+    .select("id, verification_status")
+    .eq("owner_user_id", user.id)
+    .single();
+
+  if (workspaceError || !workspace) {
+    throw new Error("Owner workspace not found");
+  }
+
+  return {
+    userId: user.id,
+    workspaceId: workspace.id,
+    verificationStatus: workspace.verification_status,
+  };
 }

@@ -17,7 +17,9 @@ function getPublicSupabaseConfig() {
   return { supabaseUrl, supabaseAnonKey };
 }
 
-export function createBrowserSupabaseClient() {
+// Public browser client for future anon-safe reads only.
+// Workspace-owned tables must stay behind server helpers until explicit RLS policies exist.
+export function createPublicBrowserSupabaseClient() {
   if (typeof window === "undefined") {
     throw new Error("Browser Supabase client can only be created in the browser");
   }
