@@ -1,12 +1,14 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { MouseEventHandler, ReactNode } from "react";
 
 type ButtonProps = {
   href?: string;
   children: ReactNode;
   variant?: "primary" | "secondary" | "ghost" | "dark" | "light" | "outlineDark";
   className?: string;
-  onClick?: () => void;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
 };
 
 const buttonStyles = {
@@ -27,10 +29,13 @@ export function Button({
   variant = "primary",
   className = "",
   onClick,
+  type = "button",
+  disabled = false,
 }: ButtonProps) {
-  const classes = `inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium ${buttonStyles[variant]} ${className}`;
+  const classes = `inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-50 ${buttonStyles[variant]} ${className}`;
 
   if (href) {
+    // Link renders an anchor, so button-only props like `type`/`disabled` are intentionally ignored.
     return (
       <Link href={href} className={classes}>
         {children}
@@ -39,7 +44,7 @@ export function Button({
   }
 
   return (
-    <button className={classes} onClick={onClick}>
+    <button type={type} disabled={disabled} className={classes} onClick={onClick}>
       {children}
     </button>
   );
