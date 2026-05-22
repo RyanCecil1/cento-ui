@@ -12,15 +12,17 @@ type ButtonProps = {
 };
 
 const buttonStyles = {
-  primary: "bg-primary text-white hover:bg-primary-deep",
+  primary:
+    "border border-primary/20 bg-primary text-white shadow-[0_18px_30px_-20px_rgba(93,54,197,0.7)] hover:-translate-y-0.5 hover:bg-primary-deep",
   secondary:
-    "bg-transparent text-foreground border border-line hover:border-primary hover:text-primary",
-  ghost: "bg-transparent text-foreground hover:bg-primary-soft",
+    "border border-line bg-white/70 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] hover:-translate-y-0.5 hover:border-primary/35 hover:text-primary",
+  ghost: "bg-transparent text-foreground hover:bg-primary-soft/70",
   dark:
-    "border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:bg-[var(--app-panel-soft)]",
-  light: "bg-white text-foreground hover:bg-primary-soft",
+    "border border-[var(--app-shell-outline)] bg-[var(--app-panel)] text-[var(--app-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] hover:-translate-y-0.5 hover:bg-[var(--app-panel-soft)]",
+  light:
+    "border border-line bg-white/85 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:-translate-y-0.5 hover:bg-primary-soft/40",
   outlineDark:
-    "bg-transparent text-[var(--app-text)] border border-[var(--app-border)] hover:border-primary/60 hover:bg-[var(--app-hover)]",
+    "border border-[var(--app-border)] bg-[var(--app-soft-fill)] text-[var(--app-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] hover:-translate-y-0.5 hover:border-primary/50 hover:bg-[var(--app-hover)]",
 };
 
 export function Button({
@@ -32,9 +34,20 @@ export function Button({
   type = "button",
   disabled = false,
 }: ButtonProps) {
-  const classes = `inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium ${buttonStyles[variant]} ${disabled ? "pointer-events-none opacity-50" : ""} ${className}`;
+  const classes = `inline-flex h-11 items-center justify-center gap-2 rounded-[16px] px-4 text-sm font-semibold tracking-[-0.01em] ${buttonStyles[variant]} ${disabled ? "pointer-events-none opacity-50" : ""} ${className}`;
 
   if (href) {
+    if (disabled) {
+      return (
+        <span
+          className={classes}
+          aria-disabled="true"
+        >
+          {children}
+        </span>
+      );
+    }
+
     return (
       <Link href={href} className={classes}>
         {children}
@@ -84,7 +97,7 @@ export function SurfaceCard({
 }) {
   return (
     <div
-      className={`surface-panel rounded-lg p-6 ${className}`}
+      className={`surface-panel rounded-[var(--radius-surface)] p-6 ${className}`}
     >
       {children}
     </div>

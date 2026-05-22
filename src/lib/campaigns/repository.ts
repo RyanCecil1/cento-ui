@@ -1,10 +1,36 @@
 import "server-only";
 
-import { createDemoId, getDemoStore } from "@/lib/demo/store";
+import {
+  createDemoId,
+  getDemoStore,
+  type DemoCampaign,
+} from "@/lib/demo/store";
 import { resolveWorkspaceAudience } from "@/lib/contacts/repository";
 import { listSenderIds } from "@/lib/sender-ids/repository";
 import { estimateCampaignCredits } from "./pricing";
-import type { CampaignDraft, CampaignState } from "./types";
+import {
+  hasValidSelectedCandidateId,
+  type CampaignDraft,
+  type CampaignState,
+} from "./types";
+
+export const campaignDraftPersistenceErrorCodes = {
+  notFound: "CAMPAIGN_DRAFT_NOT_FOUND",
+  invalidAiComposeSelection: "INVALID_AI_COMPOSE_SELECTION",
+} as const;
+
+export type CampaignDraftPersistenceErrorCode =
+  (typeof campaignDraftPersistenceErrorCodes)[keyof typeof campaignDraftPersistenceErrorCodes];
+
+export class CampaignDraftPersistenceError extends Error {
+  code: CampaignDraftPersistenceErrorCode;
+
+  constructor(code: CampaignDraftPersistenceErrorCode, options?: { cause?: unknown }) {
+    super(code, options);
+    this.name = "CampaignDraftPersistenceError";
+    this.code = code;
+  }
+}
 
 export async function listCampaigns(workspaceId: string) {
   return getDemoStore().campaigns.filter((campaign) => campaign.workspaceId === workspaceId);
@@ -16,38 +42,21 @@ export async function getCampaign(workspaceId: string, campaignId: string) {
   ) ?? null;
 }
 
-export async function saveCampaignDraft(workspaceId: string, draft: CampaignDraft) {
+export async function getCampaignDraft(workspaceId: string, campaignId: string) {
+  const campaign = await getCampaign(workspaceId, campaignId);
+  if (!campaign) return null;
+
+  const groupIds = await getCampaignAudienceGroupIds(workspaceId, campaignId);
+  return toCampaignDraft(campaign, groupIds);
+}
+
+export async function createCampaignDraft(workspaceId: string, draft: CampaignDraft) {
+  assertValidCampaignDraft(draft);
+
   const store = getDemoStore();
   const audience = await resolveWorkspaceAudience(workspaceId, draft.audience);
   const pricing = estimateCampaignCredits(audience.summary.deliverable, draft.message);
   const now = new Date().toISOString();
-
-  const existing = draft.id
-    ? store.campaigns.find((campaign) => campaign.workspaceId === workspaceId && campaign.id === draft.id)
-    : null;
-
-  if (existing) {
-    existing.name = draft.name;
-    existing.senderId = draft.senderId;
-    existing.message = draft.message;
-    existing.templateId = draft.templateId ?? null;
-    existing.scheduleAt = draft.scheduleAt ?? null;
-    existing.audienceFilters = draft.audience.filters;
-    existing.personalizationDefaults = draft.personalizationDefaults;
-    existing.audienceFilterSummary = `${draft.audience.groupIds.length} groups • ${draft.audience.filters.length} filters`;
-    existing.estimatedRecipients = audience.summary.deliverable;
-    existing.estimatedCredits = pricing.totalCredits;
-    existing.updatedAt = now;
-
-    store.campaignAudienceGroups = store.campaignAudienceGroups.filter(
-      (item) => !(item.workspaceId === workspaceId && item.campaignId === existing.id),
-    );
-    draft.audience.groupIds.forEach((groupId) => {
-      store.campaignAudienceGroups.push({ workspaceId, campaignId: existing.id, groupId });
-    });
-
-    return existing;
-  }
 
   const campaign = {
     id: createDemoId("campaign"),
@@ -60,6 +69,7 @@ export async function saveCampaignDraft(workspaceId: string, draft: CampaignDraf
     scheduleAt: draft.scheduleAt ?? null,
     audienceFilterSummary: `${draft.audience.groupIds.length} groups • ${draft.audience.filters.length} filters`,
     personalizationDefaults: draft.personalizationDefaults,
+    aiCompose: draft.aiCompose,
     audienceFilters: draft.audience.filters,
     failureReason: null,
     estimatedRecipients: audience.summary.deliverable,
@@ -76,6 +86,45 @@ export async function saveCampaignDraft(workspaceId: string, draft: CampaignDraf
   });
 
   return campaign;
+}
+
+export async function updateCampaignDraft(workspaceId: string, draft: CampaignDraft) {
+  assertValidCampaignDraft(draft);
+
+  const existing = draft.id
+    ? await getCampaign(workspaceId, draft.id)
+    : null;
+
+  if (!existing || !draft.id) {
+    throw new CampaignDraftPersistenceError(campaignDraftPersistenceErrorCodes.notFound);
+  }
+
+  const store = getDemoStore();
+  const audience = await resolveWorkspaceAudience(workspaceId, draft.audience);
+  const pricing = estimateCampaignCredits(audience.summary.deliverable, draft.message);
+  const now = new Date().toISOString();
+
+  existing.name = draft.name;
+  existing.senderId = draft.senderId;
+  existing.message = draft.message;
+  existing.templateId = draft.templateId ?? null;
+  existing.scheduleAt = draft.scheduleAt ?? null;
+  existing.audienceFilters = draft.audience.filters;
+  existing.personalizationDefaults = draft.personalizationDefaults;
+  existing.aiCompose = draft.aiCompose;
+  existing.audienceFilterSummary = `${draft.audience.groupIds.length} groups • ${draft.audience.filters.length} filters`;
+  existing.estimatedRecipients = audience.summary.deliverable;
+  existing.estimatedCredits = pricing.totalCredits;
+  existing.updatedAt = now;
+
+  store.campaignAudienceGroups = store.campaignAudienceGroups.filter(
+    (item) => !(item.workspaceId === workspaceId && item.campaignId === existing.id),
+  );
+  draft.audience.groupIds.forEach((groupId) => {
+    store.campaignAudienceGroups.push({ workspaceId, campaignId: existing.id, groupId });
+  });
+
+  return existing;
 }
 
 export async function setCampaignState(workspaceId: string, campaignId: string, state: CampaignState, failureReason: string | null = null) {
@@ -117,3 +166,30 @@ export async function getCampaignEstimate(workspaceId: string, campaignId: strin
   };
 }
 
+function assertValidCampaignDraft(draft: CampaignDraft) {
+  if (!hasValidSelectedCandidateId(draft.aiCompose)) {
+    throw new CampaignDraftPersistenceError(
+      campaignDraftPersistenceErrorCodes.invalidAiComposeSelection,
+    );
+  }
+}
+
+function toCampaignDraft(
+  campaign: DemoCampaign,
+  groupIds: string[],
+): CampaignDraft {
+  return {
+    id: campaign.id,
+    name: campaign.name,
+    senderId: campaign.senderId,
+    message: campaign.message,
+    templateId: campaign.templateId ?? undefined,
+    scheduleAt: campaign.scheduleAt ?? undefined,
+    audience: {
+      groupIds,
+      filters: campaign.audienceFilters,
+    },
+    personalizationDefaults: campaign.personalizationDefaults,
+    aiCompose: campaign.aiCompose,
+  };
+}
