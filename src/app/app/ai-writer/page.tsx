@@ -2,42 +2,124 @@ import { AppSection, Button } from "@/components/ui";
 import { aiSuggestions } from "@/data/site";
 
 export default function AIWriterPage() {
+  const experimentationNotes = [
+    {
+      label: "Use it for",
+      value: "Prompt shaping, subject-matter variants, and early draft exploration before a real campaign is built.",
+    },
+    {
+      label: "Do not use it for",
+      value: "Final approvals, audience selection, sender checks, or anything that should happen inside the campaign flow.",
+    },
+    {
+      label: "Best next step",
+      value: "Move the strongest draft into campaign creation where credits, recipients, schedule, and final review stay visible.",
+    },
+  ];
+
+  const labUseCases = [
+    "Test alternate openings before writing the final campaign.",
+    "Explore shorter versions when cost per send matters.",
+    "Collect tone directions for different audiences and approvals.",
+  ];
+
   return (
     <AppSection
-      title="AI Writer"
-      description="The AI writer stays assistive: it shortens, clarifies, and repositions SMS drafts while keeping human approval in control."
-      action={<Button variant="outlineDark">Generate draft</Button>}
+      title="AI message lab"
+      description="Use this page as a secondary support surface for copy experiments and prompt inspiration. The primary AI workflow now lives inside campaign creation where the final message, audience, cost, and approval stay connected."
+      action={<Button href="/app/campaigns/new">Open campaign builder</Button>}
     >
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-        <section className="rounded-lg border border-white/10 bg-[#121018] p-5">
-          <p className="mono-number text-xs uppercase text-white/36">Draft editor</p>
-          <div className="mt-5 rounded-lg border border-white/10 bg-black/20 p-5 text-sm leading-7 text-white/70">
-            Dear parent, this is a reminder that the PTA meeting starts tomorrow at
-            10:00 AM in the assembly hall. Please arrive a few minutes early for
-            registration.
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {["147 characters", "1 SMS unit", "Professional tone"].map((item) => (
-              <div key={item} className="rounded-md border border-white/10 bg-white/5 px-3 py-3">
-                <p className="text-sm text-white/72">{item}</p>
-              </div>
-            ))}
+      <div className="space-y-6">
+        <section className="rounded-lg app-card-gradient p-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-3xl">
+              <p className="mono-number text-xs uppercase text-primary">Secondary AI surface</p>
+              <h2 className="mt-3 text-2xl font-medium text-[var(--app-text)]">
+                Explore message angles here, then finish the real work in campaign creation.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
+                This lab is useful when you want to test tone, shorten a message, or get unstuck.
+                It is not the system of record for final campaign decisions.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button href="/app/campaigns/new">Create campaign with AI</Button>
+              <Button href="/app/campaigns" variant="outlineDark">
+                Review campaign drafts
+              </Button>
+            </div>
           </div>
         </section>
 
-        <section className="rounded-lg border border-primary/30 bg-[linear-gradient(180deg,#25163b_0%,#121018_100%)] p-5">
-          <p className="mono-number text-xs uppercase text-primary-soft">Suggested actions</p>
-          <div className="mt-5 grid gap-2">
-            {aiSuggestions.map((item) => (
-              <button
-                key={item}
-                className="rounded-md border border-white/10 px-4 py-3 text-left text-sm text-white/70 transition hover:border-primary/60 hover:bg-white/10 hover:text-white"
-              >
-                {item}
-              </button>
-            ))}
+        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <section className="rounded-lg app-card p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="mono-number text-xs uppercase app-label">Message sandbox</p>
+                <h2 className="mt-3 text-xl font-medium text-[var(--app-text)]">Copy you can pressure-test</h2>
+              </div>
+              <div className="rounded-full border app-border bg-[var(--app-soft-fill)] px-3 py-1">
+                <p className="mono-number text-[11px] uppercase app-label">Assistive only</p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-[20px] border app-border bg-[var(--app-panel-soft)] p-5">
+              <p className="text-sm leading-7 text-[var(--app-text)]">
+                Dear parents, this is a reminder that the PTA meeting starts tomorrow at 10:00 AM
+                in the assembly hall. Please arrive a few minutes early so registration can begin
+                on time.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {["153 characters", "1 SMS unit", "Reminder tone"].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border app-border bg-[var(--app-soft-fill)] px-4 py-4"
+                >
+                  <p className="text-sm text-[var(--app-muted-strong)]">{item}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              {experimentationNotes.map((item) => (
+                <div key={item.label} className="rounded-2xl border app-border bg-[var(--app-soft-fill)] p-4">
+                  <p className="mono-number text-[11px] uppercase app-label">{item.label}</p>
+                  <p className="mt-3 text-sm leading-6 text-[var(--app-muted-strong)]">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="space-y-6">
+            <section className="rounded-lg app-card p-6">
+              <p className="mono-number text-xs uppercase app-label">Prompt starters</p>
+              <div className="mt-5 grid gap-3">
+                {aiSuggestions.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className="rounded-2xl border app-border bg-[var(--app-soft-fill)] px-4 py-4 text-left text-sm leading-6 text-[var(--app-muted-strong)] transition hover:border-primary/50 hover:bg-[var(--app-hover)] hover:text-[var(--app-text)]"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-lg app-card-soft p-6">
+              <p className="mono-number text-xs uppercase app-label">Useful experiments</p>
+              <div className="mt-5 space-y-3">
+                {labUseCases.map((item) => (
+                  <div key={item} className="rounded-2xl border app-border bg-[var(--app-panel)] px-4 py-4">
+                    <p className="text-sm leading-6 text-[var(--app-muted-strong)]">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
-        </section>
+        </div>
       </div>
     </AppSection>
   );

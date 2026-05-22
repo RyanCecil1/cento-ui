@@ -138,9 +138,9 @@ export const featureCards: Feature[] = [
   {
     title: "AI message assist",
     description:
-      "Generate, rewrite, shorten, and check tone while keeping human approval before any message is sent.",
+      "Use AI inside campaign drafting to generate options, tighten copy, reduce SMS cost, and pressure-test tone before a human approves the final send.",
     icon: MagicWand,
-    proof: "Useful for saving credits without automating risk.",
+    proof: "Supports faster writing without turning approval into autopilot.",
   },
   {
     title: "Sender ID governance",
@@ -420,10 +420,10 @@ export const reportHighlights = [
 ];
 
 export const aiSuggestions = [
-  "Shorten to one SMS unit",
-  "Make it warmer",
-  "Rewrite for parents",
-  "Check spam risk",
+  "Rewrite this reminder to fit one SMS unit without losing the call to action.",
+  "Turn this announcement into a warmer version for parents or guardians.",
+  "Generate three concise variants for a church, school, or SME audience.",
+  "Check whether the wording sounds risky, unclear, or too promotional.",
 ];
 
 export const quickActions = [
