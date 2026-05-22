@@ -1,3 +1,8 @@
+import type {
+  CampaignCopyCandidate,
+  CampaignCopyRequest,
+} from "@/lib/ai/types";
+
 export type CampaignState =
   | "draft"
   | "queued"
@@ -15,6 +20,19 @@ export type AudienceFilter = {
   value: string;
 };
 
+export type CampaignDraftAiComposeInputs = Pick<
+  CampaignCopyRequest,
+  "audienceSummary" | "goal" | "tone" | "urgency" | "offer" | "cta"
+> & {
+  senderContext: string;
+};
+
+export type CampaignDraftAiComposeState = {
+  inputs: CampaignDraftAiComposeInputs;
+  candidates: CampaignCopyCandidate[];
+  selectedCandidateId?: CampaignCopyCandidate["id"];
+};
+
 export type CampaignDraft = {
   id?: string;
   name: string;
@@ -30,5 +48,5 @@ export type CampaignDraft = {
     firstName: string;
     lastName: string;
   };
+  aiCompose?: CampaignDraftAiComposeState;
 };
-
