@@ -1,9 +1,12 @@
-import { ArrowRight, CheckCircle } from "@phosphor-icons/react/dist/ssr";
+import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
+import { getCurrentViewer } from "@/lib/auth/current-viewer";
+import { WorkspaceOnboardingForm } from "@/components/onboarding/workspace-onboarding-form";
 import { MarketingHeader } from "@/components/site-chrome";
-import { Button } from "@/components/ui";
 import { onboardingSteps } from "@/data/site";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const viewer = await getCurrentViewer();
+
   return (
     <>
       <MarketingHeader />
@@ -18,11 +21,19 @@ export default function OnboardingPage() {
               The onboarding path captures the information that shapes the dashboard:
               organization, use case, sender ID expectation, and first action.
             </p>
-            <div className="mt-8">
-              <Button href="/app" variant="light">
-                Enter Dashboard
-                <ArrowRight size={16} weight="bold" />
-              </Button>
+            <div className="mt-8 rounded-lg border border-white/10 bg-white/5 p-5">
+              <p className="mono-number text-xs uppercase text-white/42">Finalize setup</p>
+              <div className="mt-4">
+                <WorkspaceOnboardingForm
+                  initialValues={{
+                    workspaceName: viewer?.workspace.name ?? "GraceHub Communications",
+                    timezone: viewer?.workspace.timezone ?? "Africa/Accra",
+                    senderMode: viewer?.workspace.senderMode ?? "shared",
+                    primaryAudience: viewer?.workspace.primaryAudience ?? "Church members",
+                    useCase: viewer?.workspace.useCase ?? "Member announcements and reminders",
+                  }}
+                />
+              </div>
             </div>
           </section>
 

@@ -1,7 +1,32 @@
+import { getCurrentViewer } from "@/lib/auth/current-viewer";
+import { listCampaigns } from "@/lib/campaigns/repository";
+import { formatCredits, formatNumber } from "@/lib/format";
 import { AppSection } from "@/components/ui";
-import { recentCampaigns, reportHighlights } from "@/data/site";
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const viewer = await getCurrentViewer();
+  if (!viewer) return null;
+
+  const campaigns = await listCampaigns(viewer.workspace.id);
+  const deliveredCredits = campaigns.reduce((total, campaign) => total + campaign.creditsUsed, 0);
+  const reportHighlights = [
+    {
+      label: "Completed campaigns",
+      value: formatNumber(campaigns.filter((campaign) => campaign.state === "completed").length),
+      helper: "Campaigns that cleared final recheck and sent successfully.",
+    },
+    {
+      label: "Queued campaigns",
+      value: formatNumber(campaigns.filter((campaign) => campaign.state === "queued").length),
+      helper: "Campaigns waiting for schedule time or queue processing.",
+    },
+    {
+      label: "Credits consumed",
+      value: formatCredits(deliveredCredits),
+      helper: "Debits posted after successful execution runs.",
+    },
+  ];
+
   return (
     <AppSection
       title="Reports"
@@ -22,18 +47,18 @@ export default function ReportsPage() {
           <p className="mono-number text-xs uppercase text-white/36">Campaign performance snapshot</p>
         </div>
         <div className="divide-y divide-white/10">
-          {recentCampaigns.map((campaign) => (
+          {campaigns.map((campaign) => (
             <div
-              key={campaign.name}
+              key={campaign.id}
               className="grid gap-3 px-5 py-4 text-sm md:grid-cols-[1.35fr_0.8fr_0.8fr_0.8fr]"
             >
               <div>
                 <p className="font-medium text-white">{campaign.name}</p>
-                <p className="mt-1 text-xs text-white/42">{campaign.audience}</p>
+                <p className="mt-1 text-xs text-white/42">{campaign.audienceFilterSummary}</p>
               </div>
-              <Metric label="Delivered" value={campaign.delivered} />
-              <Metric label="Failed" value={campaign.failed} />
-              <Metric label="Cost" value={campaign.cost} />
+              <Metric label="Delivered" value={formatNumber(campaign.actualRecipients)} />
+              <Metric label="Failed" value={campaign.failureReason ? "1 issue" : "0"} />
+              <Metric label="Cost" value={formatCredits(campaign.creditsUsed || campaign.estimatedCredits)} />
             </div>
           ))}
         </div>

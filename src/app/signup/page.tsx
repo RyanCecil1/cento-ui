@@ -1,6 +1,6 @@
 import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
+import { SessionForm } from "@/components/auth/session-form";
 import { MarketingHeader } from "@/components/site-chrome";
-import { Button } from "@/components/ui";
 
 const benefits = [
   "Create an operator profile",
@@ -32,27 +32,10 @@ export default function SignupPage() {
           </div>
 
           <div className="rounded-lg border border-line bg-white p-6 shadow-[var(--shadow-quiet)]">
-            <div className="grid gap-4">
-              <MockInput label="Organization name" value="GraceHub Communications" />
-              <MockInput label="Work email" value="admin@gracehub.local" />
-              <MockInput label="Phone number" value="+233 24 000 0000" />
-              <MockInput label="Primary use case" value="Member announcements and reminders" />
-              <Button href="/onboarding" className="mt-2 w-full">
-                Continue to Onboarding
-              </Button>
-            </div>
+            <SessionForm mode="signup" />
           </div>
         </div>
       </main>
     </>
-  );
-}
-
-function MockInput({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-line bg-[var(--cream-50)] p-4">
-      <p className="mono-number text-xs uppercase text-muted">{label}</p>
-      <p className="mt-3 text-sm text-foreground">{value}</p>
-    </div>
   );
 }
