@@ -40,6 +40,15 @@ const errorResponses = {
       },
     },
   },
+  internalError: {
+    status: 500,
+    body: {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Unable to generate campaign copy",
+      },
+    },
+  },
   [campaignCopyErrorCodes.notConfigured]: {
     status: 503,
     body: {
@@ -89,7 +98,7 @@ const errorResponses = {
 
 export async function POST(request: Request) {
   const viewer = await getCurrentViewer();
-  if (!viewer) {
+  if (!hasSessionBackedViewer(viewer)) {
     return jsonError(errorResponses.unauthenticated);
   }
 
@@ -123,7 +132,13 @@ function toErrorResponse(error: unknown) {
     return errorResponses[error.code];
   }
 
-  return errorResponses[campaignCopyErrorCodes.upstreamHttpError];
+  return errorResponses.internalError;
+}
+
+function hasSessionBackedViewer(
+  viewer: Awaited<ReturnType<typeof getCurrentViewer>>,
+) {
+  return Boolean(viewer?.token);
 }
 
 function jsonError(response: {

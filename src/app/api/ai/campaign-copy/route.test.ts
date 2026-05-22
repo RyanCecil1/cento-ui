@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   CampaignCopyError,
@@ -33,6 +33,10 @@ const validPayload: CampaignCopyRequest = {
 };
 
 describe("POST /api/ai/campaign-copy", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("returns 401 when the current viewer is missing", async () => {
     vi.mocked(getCurrentViewer).mockResolvedValue(null);
 
@@ -53,6 +57,31 @@ describe("POST /api/ai/campaign-copy", () => {
     });
   });
 
+  it("returns 401 when the viewer exists but has no session token", async () => {
+    vi.mocked(getCurrentViewer).mockResolvedValue({
+      user: { id: "user_123" },
+      workspace: { id: "workspace_123" },
+      token: null,
+    } as Awaited<ReturnType<typeof getCurrentViewer>>);
+
+    const response = await POST(
+      new Request("http://localhost/api/ai/campaign-copy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "Authentication required",
+      },
+    });
+    expect(generateCampaignCopy).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when the request payload does not match the AI contract", async () => {
     vi.mocked(getCurrentViewer).mockResolvedValue({
       user: { id: "user_123" },
@@ -68,6 +97,31 @@ describe("POST /api/ai/campaign-copy", () => {
           ...validPayload,
           tone: "casual",
         }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "INVALID_REQUEST_PAYLOAD",
+        message: "Invalid AI request payload",
+      },
+    });
+    expect(generateCampaignCopy).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when the request body is malformed JSON", async () => {
+    vi.mocked(getCurrentViewer).mockResolvedValue({
+      user: { id: "user_123" },
+      workspace: { id: "workspace_123" },
+      token: "session_123",
+    } as Awaited<ReturnType<typeof getCurrentViewer>>);
+
+    const response = await POST(
+      new Request("http://localhost/api/ai/campaign-copy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{\"campaignName\":",
       }),
     );
 
@@ -135,6 +189,58 @@ describe("POST /api/ai/campaign-copy", () => {
       error: {
         code: campaignCopyErrorCodes.notConfigured,
         message: "AI is not configured for this environment",
+      },
+    });
+  });
+
+  it("maps malformed provider responses to a stable 502 response", async () => {
+    vi.mocked(getCurrentViewer).mockResolvedValue({
+      user: { id: "user_123" },
+      workspace: { id: "workspace_123" },
+      token: "session_123",
+    } as Awaited<ReturnType<typeof getCurrentViewer>>);
+    vi.mocked(generateCampaignCopy).mockRejectedValue(
+      new CampaignCopyError(campaignCopyErrorCodes.malformedProviderResponse),
+    );
+
+    const response = await POST(
+      new Request("http://localhost/api/ai/campaign-copy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: campaignCopyErrorCodes.malformedProviderResponse,
+        message: "AI returned a malformed campaign copy response",
+      },
+    });
+  });
+
+  it("maps unexpected local failures to a stable internal error response", async () => {
+    vi.mocked(getCurrentViewer).mockResolvedValue({
+      user: { id: "user_123" },
+      workspace: { id: "workspace_123" },
+      token: "session_123",
+    } as Awaited<ReturnType<typeof getCurrentViewer>>);
+    vi.mocked(generateCampaignCopy).mockRejectedValue(new Error("boom"));
+
+    const response = await POST(
+      new Request("http://localhost/api/ai/campaign-copy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Unable to generate campaign copy",
       },
     });
   });
