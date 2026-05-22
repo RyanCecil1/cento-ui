@@ -1,6 +1,9 @@
 import "server-only";
 
-import { createRequestSupabaseAuthClient } from "@/lib/supabase/server";
+import {
+  createRequestSupabaseAuthClient,
+  createServerSupabaseClient,
+} from "@/lib/supabase/server";
 
 export async function requireOwnerSession(accessToken: string) {
   if (!accessToken.trim()) {
@@ -17,4 +20,24 @@ export async function requireOwnerSession(accessToken: string) {
   }
 
   return { userId: user.id };
+}
+
+export async function requireOwnerWorkspaceContext(accessToken: string) {
+  const { userId } = await requireOwnerSession(accessToken);
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("workspaces")
+    .select("id, verification_status")
+    .eq("owner_user_id", userId)
+    .single();
+
+  if (error || !data) {
+    throw new Error("Workspace access denied");
+  }
+
+  return {
+    userId,
+    workspaceId: data.id,
+    verificationStatus: data.verification_status,
+  };
 }

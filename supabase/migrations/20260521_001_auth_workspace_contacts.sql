@@ -123,9 +123,26 @@ returns trigger
 language plpgsql
 as $$
 begin
+  if tg_op = 'UPDATE' and old.contact_id is not null then
+    update contacts
+    set is_suppressed = exists (
+      select 1
+      from contact_suppressions
+      where workspace_id = old.workspace_id
+        and contact_id = old.contact_id
+    )
+    where workspace_id = old.workspace_id
+      and id = old.contact_id;
+  end if;
+
   if tg_op in ('INSERT', 'UPDATE') and new.contact_id is not null then
     update contacts
-    set is_suppressed = true
+    set is_suppressed = exists (
+      select 1
+      from contact_suppressions
+      where workspace_id = new.workspace_id
+        and contact_id = new.contact_id
+    )
     where workspace_id = new.workspace_id
       and id = new.contact_id;
   end if;
