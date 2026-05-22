@@ -525,7 +525,20 @@ export function CampaignBuilder({
       }
 
       if (!draft.scheduleAt) {
-        await fetch("/api/internal/jobs/run-due-campaigns", { method: "POST" });
+        const runnerResponse = await fetch("/api/internal/jobs/run-due-campaigns", {
+          method: "POST",
+        });
+        const runnerData = (await runnerResponse.json().catch(() => ({}))) as RouteResponse;
+
+        if (!runnerResponse.ok) {
+          setSubmitError(
+            resolveRouteErrorMessage(
+              runnerData,
+              "Campaign saved, but the immediate runner could not start.",
+            ),
+          );
+          return;
+        }
       }
 
       router.push(`/app/campaigns/${savedCampaign.id}`);

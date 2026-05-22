@@ -237,4 +237,48 @@ describe("CampaignBuilder hardening", () => {
 
     expect(push).not.toHaveBeenCalled();
   });
+
+  it("blocks redirect and surfaces the immediate runner failure message", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          candidates: [
+            { id: "candidate-1", label: "Direct", body: "Message one" },
+            { id: "candidate-2", label: "Friendly", body: "Message two" },
+            { id: "candidate-3", label: "Urgent", body: "Message three" },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(mockJsonResponse({ id: "campaign_1" }))
+      .mockResolvedValueOnce(mockJsonResponse({ success: true }))
+      .mockResolvedValueOnce(
+        mockJsonResponse(
+          {
+            error: {
+              code: "RUNNER_FAILED",
+              message: "Runner could not start the immediate campaign.",
+            },
+          },
+          false,
+        ),
+      );
+
+    renderBuilder();
+    await completeComposeFlow();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: /queue and send/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Runner could not start the immediate campaign."),
+      ).toBeInTheDocument();
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/internal/jobs/run-due-campaigns", {
+      method: "POST",
+    });
+    expect(push).not.toHaveBeenCalled();
+  });
 });
