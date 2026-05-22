@@ -1,26 +1,45 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import type { CampaignCopyCandidate, CampaignCopyTone } from "@/lib/ai/types";
 import { getCurrentViewer } from "@/lib/auth/current-viewer";
+import type {
+  CampaignDraft,
+  CampaignDraftAiComposeInputs,
+  CampaignDraftAiComposeState,
+} from "@/lib/campaigns/types";
 import { listCampaigns, saveCampaignDraft } from "@/lib/campaigns/repository";
 
-const CampaignCopyCandidateSchema = z.object({
+const campaignCopyToneValues = [
+  "direct",
+  "friendly",
+  "urgent",
+  "formal",
+] as const satisfies readonly CampaignCopyTone[];
+
+const CampaignCopyCandidateSchema: z.ZodType<CampaignCopyCandidate> = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
   body: z.string().min(1),
 });
 
-const CampaignAiComposeInputsSchema = z.object({
+const CampaignAiComposeInputsSchema: z.ZodType<CampaignDraftAiComposeInputs> = z.object({
   audienceSummary: z.string(),
   goal: z.string(),
-  tone: z.enum(["direct", "friendly", "urgent", "formal"]),
+  tone: z.enum(campaignCopyToneValues),
   urgency: z.string(),
   offer: z.string(),
   cta: z.string(),
   senderContext: z.string(),
 });
 
-export const CampaignSchema = z.object({
+const CampaignAiComposeStateSchema: z.ZodType<CampaignDraftAiComposeState> = z.object({
+  inputs: CampaignAiComposeInputsSchema,
+  candidates: z.array(CampaignCopyCandidateSchema),
+  selectedCandidateId: z.string().min(1).optional(),
+});
+
+export const CampaignSchema: z.ZodType<CampaignDraft> = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   senderId: z.string().min(1),
@@ -41,13 +60,7 @@ export const CampaignSchema = z.object({
     firstName: z.string(),
     lastName: z.string(),
   }),
-  aiCompose: z
-    .object({
-      inputs: CampaignAiComposeInputsSchema,
-      candidates: z.array(CampaignCopyCandidateSchema),
-      selectedCandidateId: z.string().min(1).optional(),
-    })
-    .optional(),
+  aiCompose: CampaignAiComposeStateSchema.optional(),
 });
 
 export async function GET() {

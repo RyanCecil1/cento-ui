@@ -34,6 +34,7 @@ export async function saveCampaignDraft(workspaceId: string, draft: CampaignDraf
     existing.scheduleAt = draft.scheduleAt ?? null;
     existing.audienceFilters = draft.audience.filters;
     existing.personalizationDefaults = draft.personalizationDefaults;
+    existing.aiCompose = draft.aiCompose;
     existing.audienceFilterSummary = `${draft.audience.groupIds.length} groups • ${draft.audience.filters.length} filters`;
     existing.estimatedRecipients = audience.summary.deliverable;
     existing.estimatedCredits = pricing.totalCredits;
@@ -60,6 +61,7 @@ export async function saveCampaignDraft(workspaceId: string, draft: CampaignDraf
     scheduleAt: draft.scheduleAt ?? null,
     audienceFilterSummary: `${draft.audience.groupIds.length} groups • ${draft.audience.filters.length} filters`,
     personalizationDefaults: draft.personalizationDefaults,
+    aiCompose: draft.aiCompose,
     audienceFilters: draft.audience.filters,
     failureReason: null,
     estimatedRecipients: audience.summary.deliverable,
@@ -116,4 +118,3 @@ export async function getCampaignEstimate(workspaceId: string, campaignId: strin
     summary: audience.summary,
   };
 }
-

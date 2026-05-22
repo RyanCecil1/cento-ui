@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { CampaignDraftAiComposeState } from "@/lib/campaigns/types";
+
 type VerificationStatus = "pending" | "verified" | "rejected";
 type SenderStatus = "approved" | "in_review" | "draft" | "rejected";
 type ContactStatus = "active" | "inactive" | "invalid" | "duplicate";
@@ -141,6 +143,7 @@ export type DemoCampaign = {
     firstName: string;
     lastName: string;
   };
+  aiCompose?: CampaignDraftAiComposeState;
   audienceFilters: Array<{ field: "tag" | "status" | "source"; operator: "in"; value: string }>;
   failureReason: string | null;
   estimatedRecipients: number;
@@ -486,4 +489,3 @@ export function getDemoStore() {
 export function createDemoId(prefix: string) {
   return createId(prefix);
 }
-
