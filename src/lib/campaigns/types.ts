@@ -33,6 +33,18 @@ export type CampaignDraftAiComposeState = {
   selectedCandidateId?: CampaignCopyCandidate["id"];
 };
 
+export function hasValidSelectedCandidateId(
+  aiCompose?: CampaignDraftAiComposeState,
+) {
+  if (!aiCompose?.selectedCandidateId) {
+    return true;
+  }
+
+  return aiCompose.candidates.some(
+    (candidate) => candidate.id === aiCompose.selectedCandidateId,
+  );
+}
+
 export type CampaignDraft = {
   id?: string;
   name: string;
