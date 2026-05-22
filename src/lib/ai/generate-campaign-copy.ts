@@ -12,6 +12,7 @@ import { CampaignCopyError, campaignCopyErrorCodes } from "@/lib/ai/types";
 const MAX_SMS_BODY_LENGTH = 320;
 const placeholderPattern =
   /\b(?:lorem ipsum|tbd|n\/a|none|insert\b|placeholder\b|your message here|coming soon)\b/i;
+const printableAsciiPattern = /^[\x20-\x7E]+$/;
 
 const SmsSafeBodySchema = z
   .string()
@@ -23,6 +24,9 @@ const SmsSafeBodySchema = z
   })
   .refine((value) => /[A-Za-z0-9]/.test(value), {
     message: "SMS copy must contain meaningful text",
+  })
+  .refine((value) => printableAsciiPattern.test(value), {
+    message: "SMS copy must use printable ASCII only",
   })
   .refine((value) => !placeholderPattern.test(value), {
     message: "SMS copy cannot contain placeholder text",
@@ -38,6 +42,9 @@ const SmsSafeLabelSchema = z
   })
   .refine((value) => /[A-Za-z0-9]/.test(value), {
     message: "SMS label must contain meaningful text",
+  })
+  .refine((value) => printableAsciiPattern.test(value), {
+    message: "SMS label must use printable ASCII only",
   })
   .refine((value) => !placeholderPattern.test(value), {
     message: "SMS label cannot contain placeholder text",
