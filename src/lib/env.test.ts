@@ -41,6 +41,20 @@ describe("parseEnv", () => {
     expect(parsed.SMS_PROVIDER).toBe("demo");
     expect("DEEPSEEK_API_KEY" in parsed).toBe(false);
   });
+
+  it("treats a blank DeepSeek key from copied env example as not configured", () => {
+    const parsed = parseEnv({
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      DEEPSEEK_API_KEY: "",
+      SMS_PROVIDER: "demo",
+      PAYMENT_PROVIDER_WEBHOOK_SECRET: "webhook-secret",
+    });
+
+    expect(parsed.SMS_PROVIDER).toBe("demo");
+    expect(parsed.DEEPSEEK_API_KEY).toBeUndefined();
+  });
 });
 
 describe("lazy env loading", () => {
@@ -77,6 +91,7 @@ describe("lazy env loading", () => {
       process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
       process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+      process.env.DEEPSEEK_API_KEY = "";
       process.env.SMS_PROVIDER = "demo";
       process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET = "webhook-secret";
 

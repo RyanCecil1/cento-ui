@@ -1,11 +1,19 @@
 import "server-only";
 import { z } from "zod";
 
+const OptionalServerSecretSchema = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  return value.trim() === "" ? undefined : value;
+}, z.string().min(1).optional());
+
 const EnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  DEEPSEEK_API_KEY: z.string().min(1).optional(),
+  DEEPSEEK_API_KEY: OptionalServerSecretSchema,
   SMS_PROVIDER: z.enum(["demo", "hubtel"]).default("demo"),
   PAYMENT_PROVIDER_WEBHOOK_SECRET: z.string().min(1).default("demo-webhook-secret"),
   HUBTEL_API_BASE_URL: z.string().url().optional(),
