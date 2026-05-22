@@ -19,9 +19,9 @@ export function AppShell({
   return (
     <div className="app-root min-h-[100dvh]">
       <div className="grid min-h-[100dvh] lg:grid-cols-[248px_1fr]">
-        <aside className="hidden border-r border-[var(--app-border)] bg-[var(--app-sidebar)] p-5 lg:block">
+        <aside className="app-shell-pane hidden border-r border-[var(--app-border)] px-5 py-6 lg:block">
           <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-primary text-sm font-semibold text-white shadow-[0_16px_26px_-18px_rgba(93,54,197,0.8)]">
               C
             </div>
             <div>
@@ -43,7 +43,7 @@ export function AppShell({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[var(--app-muted)] hover:bg-[var(--app-hover)] hover:text-[var(--app-text)]"
+                      className="flex items-center gap-3 rounded-[16px] px-3.5 py-3 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-hover)] hover:text-[var(--app-text)]"
                     >
                       <item.icon size={17} weight="bold" />
                       {item.label}
@@ -54,15 +54,17 @@ export function AppShell({
             ))}
           </div>
 
-          <div className="mt-8 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-soft)] p-4">
+          <div className="app-shell-highlight mt-8 rounded-[24px] p-5">
             <p className="mono-number text-[11px] uppercase text-[var(--app-muted-2)]">Wallet</p>
-            <p className="mono-number mt-3 text-2xl text-[var(--app-text)]">{walletBalance.toLocaleString()}</p>
+            <p className="mono-number mt-4 text-[2rem] leading-none text-[var(--app-text)]">
+              {walletBalance.toLocaleString()}
+            </p>
             <p className="mt-2 text-xs leading-5 text-[var(--app-muted)]">Credits ready for queued campaigns.</p>
           </div>
         </aside>
 
         <div className="min-w-0">
-          <header className="border-b border-[var(--app-border)] bg-[var(--app-header)] px-4 py-4 lg:px-7">
+          <header className="app-shell-glass border-b border-[var(--app-border)] px-4 py-4 backdrop-blur-xl lg:px-7">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <p className="mono-number text-xs uppercase text-primary">Cento command</p>
@@ -71,16 +73,16 @@ export function AppShell({
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex h-10 items-center gap-3 rounded-md border border-[var(--app-border)] bg-[var(--app-panel-soft)] px-3 text-sm text-[var(--app-muted-2)]">
+                <div className="app-shell-chip flex h-11 items-center gap-3 rounded-full px-4 text-sm text-[var(--app-muted-2)]">
                   <MagnifyingGlass size={17} />
                   Search campaigns, contacts, reports
                 </div>
                 <div className="flex items-center gap-2">
                   <ThemeToggle compact />
-                  <button className="flex h-10 w-10 items-center justify-center rounded-md border border-[var(--app-border)] bg-[var(--app-panel-soft)] text-[var(--app-muted)]">
+                  <button className="app-shell-chip flex h-11 w-11 items-center justify-center rounded-full text-[var(--app-muted)]">
                     <Bell size={17} />
                   </button>
-                  <button className="flex h-10 w-10 items-center justify-center rounded-md border border-[var(--app-border)] bg-[var(--app-panel-soft)] text-[var(--app-muted)]">
+                  <button className="app-shell-chip flex h-11 w-11 items-center justify-center rounded-full text-[var(--app-muted)]">
                     <Command size={17} />
                   </button>
                 </div>

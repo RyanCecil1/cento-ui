@@ -1,24 +1,31 @@
 import type { Metadata } from "next";
 import {
-  Inter,
   JetBrains_Mono,
+  Manrope,
+  Poppins,
 } from "next/font/google";
 import "./globals.css";
 
-const bodySans = Inter({
+const bodySans = Manrope({
   variable: "--font-body",
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["Arial", "Helvetica", "sans-serif"],
 });
 
-const displaySans = Inter({
+const displaySans = Poppins({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  fallback: ["Arial", "Helvetica", "sans-serif"],
 });
 
 const monoSans = JetBrains_Mono({
   variable: "--font-code",
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["Menlo", "Monaco", "monospace"],
 });
 
 export const metadata: Metadata = {
