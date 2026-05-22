@@ -13,8 +13,6 @@ describe("parseEnv", () => {
         NEXT_PUBLIC_SUPABASE_URL: "",
         NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
         SUPABASE_SERVICE_ROLE_KEY: "",
-        SMS_PROVIDER_BASE_URL: "",
-        SMS_PROVIDER_API_KEY: "",
         PAYMENT_PROVIDER_WEBHOOK_SECRET: "",
       }),
     ).toThrow("Missing required environment variable");
@@ -26,8 +24,6 @@ describe("parseEnv", () => {
         NEXT_PUBLIC_SUPABASE_URL: "not-a-url",
         NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
         SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
-        SMS_PROVIDER_BASE_URL: "https://sms.example.com",
-        SMS_PROVIDER_API_KEY: "sms-api-key",
         PAYMENT_PROVIDER_WEBHOOK_SECRET: "webhook-secret",
       }),
     ).toThrow("Invalid environment variable: NEXT_PUBLIC_SUPABASE_URL");
@@ -41,8 +37,7 @@ describe("lazy env loading", () => {
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
-      delete process.env.SMS_PROVIDER_BASE_URL;
-      delete process.env.SMS_PROVIDER_API_KEY;
+      delete process.env.SMS_PROVIDER;
       delete process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET;
 
       vi.resetModules();
@@ -69,8 +64,7 @@ describe("lazy env loading", () => {
       process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
       process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
-      process.env.SMS_PROVIDER_BASE_URL = "https://sms.example.com";
-      process.env.SMS_PROVIDER_API_KEY = "sms-api-key";
+      process.env.SMS_PROVIDER = "demo";
       process.env.PAYMENT_PROVIDER_WEBHOOK_SECRET = "webhook-secret";
 
       vi.resetModules();
@@ -92,5 +86,17 @@ describe("lazy env loading", () => {
       process.env = originalEnv;
       vi.resetModules();
     }
+  });
+
+  it("requires Hubtel credentials only when the provider is switched to hubtel", () => {
+    expect(() =>
+      parseEnv({
+        NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
+        SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+        SMS_PROVIDER: "hubtel",
+        PAYMENT_PROVIDER_WEBHOOK_SECRET: "webhook-secret",
+      }),
+    ).toThrow("Missing required environment variable");
   });
 });
