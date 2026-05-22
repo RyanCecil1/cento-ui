@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, MagicWand, PaperPlaneTilt, Plus, X } from "@phosphor-icons/react";
 import type { CampaignCopyCandidate, CampaignCopyTone } from "@/lib/ai/types";
@@ -63,9 +63,17 @@ type ValidationResult = {
   message?: string;
 };
 
-type CampaignCopyResponse = {
+type RouteErrorPayload = {
+  code?: string;
+  message?: string;
+};
+
+type RouteResponse = {
+  error?: string | RouteErrorPayload;
+};
+
+type CampaignCopyResponse = RouteResponse & {
   candidates?: CampaignCopyCandidate[];
-  error?: string | { message?: string };
 };
 
 const composeToneOptions: Array<{
@@ -122,6 +130,10 @@ const emptyFilter: AudienceFilter = {
   value: "",
 };
 
+function getCurrentTimestamp() {
+  return Date.now();
+}
+
 export function CampaignBuilder({
   senders,
   templates,
@@ -132,13 +144,26 @@ export function CampaignBuilder({
 }: CampaignBuilderProps) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [renderedAt] = useState(() => Date.now());
   const [draft, setDraft] = useState<CampaignDraft>(() => emptyDraft(senders, templates));
   const [pendingFilter, setPendingFilter] = useState<AudienceFilter>(emptyFilter);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [validationNow, setValidationNow] = useState(() => getCurrentTimestamp());
+  const scheduleTimeZone = useMemo(() => resolveTimeZone(timezone), [timezone]);
+
+  useEffect(() => {
+    if (step !== campaignBuilderSteps.length - 1 || !draft.scheduleAt) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setValidationNow(getCurrentTimestamp());
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [draft.scheduleAt, step]);
 
   const matchingContacts = useMemo(() => {
     return contacts.filter((contact) => {
@@ -281,7 +306,7 @@ export function CampaignBuilder({
     if (Number.isNaN(scheduleDate.getTime())) {
       return { valid: false, message: "Choose a valid send time." };
     }
-    if (scheduleDate.getTime() < renderedAt - 60_000) {
+    if (scheduleDate.getTime() <= validationNow) {
       return { valid: false, message: "Scheduled time must be in the future." };
     }
 
@@ -295,6 +320,9 @@ export function CampaignBuilder({
     { valid: true },
     validateSchedule(),
   ];
+  const unlockedSteps = validations.map((_, index) =>
+    validations.slice(0, index).every((validation) => validation.valid),
+  );
   const currentValidation = validations[step] ?? { valid: true };
   const canContinue = currentValidation.valid && !submitting;
 
@@ -477,28 +505,22 @@ export function CampaignBuilder({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(draft),
       });
-      const savedCampaign = await saveResponse.json().catch(() => ({}));
+      const savedCampaign = (await saveResponse.json().catch(() => ({}))) as
+        | (RouteResponse & { id?: string })
+        | Record<string, never>;
 
       if (!saveResponse.ok || typeof savedCampaign.id !== "string") {
-        setSubmitError(
-          typeof savedCampaign.error === "string"
-            ? savedCampaign.error
-            : "Unable to save this campaign.",
-        );
+        setSubmitError(resolveRouteErrorMessage(savedCampaign, "Unable to save this campaign."));
         return;
       }
 
       const scheduleResponse = await fetch(`/api/campaigns/${savedCampaign.id}/schedule`, {
         method: "POST",
       });
-      const scheduleData = await scheduleResponse.json().catch(() => ({}));
+      const scheduleData = (await scheduleResponse.json().catch(() => ({}))) as RouteResponse;
 
       if (!scheduleResponse.ok) {
-        setSubmitError(
-          typeof scheduleData.error === "string"
-            ? scheduleData.error
-            : "Unable to queue the campaign.",
-        );
+        setSubmitError(resolveRouteErrorMessage(scheduleData, "Unable to queue the campaign."));
         return;
       }
 
@@ -521,7 +543,27 @@ export function CampaignBuilder({
       return;
     }
 
-    setStep((value) => Math.min(campaignBuilderSteps.length - 1, value + 1));
+    setStep((value) => {
+      const nextStep = Math.min(campaignBuilderSteps.length - 1, value + 1);
+
+      if (nextStep === campaignBuilderSteps.length - 1) {
+        setValidationNow(getCurrentTimestamp());
+      }
+
+      return nextStep;
+    });
+  }
+
+  function handleStepChange(nextStep: number) {
+    if (!unlockedSteps[nextStep]) {
+      return;
+    }
+
+    if (nextStep === campaignBuilderSteps.length - 1) {
+      setValidationNow(getCurrentTimestamp());
+    }
+
+    setStep(nextStep);
   }
 
   return (
@@ -532,12 +574,14 @@ export function CampaignBuilder({
             {campaignBuilderSteps.map((label, index) => {
               const isActive = step === index;
               const isDone = step > index;
+              const isUnlocked = unlockedSteps[index];
 
               return (
                 <button
                   key={label}
                   type="button"
-                  onClick={() => setStep(index)}
+                  disabled={!isUnlocked}
+                  onClick={() => handleStepChange(index)}
                   className={`app-shell-chip flex h-10 items-center gap-2 rounded-full px-4 text-sm ${
                     isActive
                       ? "bg-primary text-white keep-white"
@@ -968,18 +1012,20 @@ export function CampaignBuilder({
           {step === 4 ? (
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <Field label={`Schedule (${timezone})`}>
+                <Field label={`Schedule (workspace timezone: ${scheduleTimeZone})`}>
                   <input
                     type="datetime-local"
-                    value={toLocalDateTimeValue(draft.scheduleAt)}
-                    onChange={(event) =>
+                    value={toZonedDateTimeValue(draft.scheduleAt, scheduleTimeZone)}
+                    onChange={(event) => {
+                      setValidationNow(getCurrentTimestamp());
                       setDraft((current) => ({
                         ...current,
-                        scheduleAt: event.target.value
-                          ? new Date(event.target.value).toISOString()
-                          : undefined,
-                      }))
-                    }
+                        scheduleAt: parseZonedDateTimeValue(
+                          event.target.value,
+                          scheduleTimeZone,
+                        ),
+                      }));
+                    }}
                   />
                 </Field>
                 <div className="rounded-lg border border-white/10 bg-black/20 p-4">
@@ -1039,7 +1085,14 @@ export function CampaignBuilder({
             <SummaryRow label="SMS units" value={`${pricing.unitsPerRecipient} per recipient`} />
             <SummaryRow label="Cost" value={`${pricing.totalCredits} credits`} />
             <SummaryRow label="Balance after" value={`${walletBalance - pricing.totalCredits} credits`} />
-            <SummaryRow label="Schedule" value={draft.scheduleAt ? readableDate(draft.scheduleAt) : "Send immediately"} />
+            <SummaryRow
+              label="Schedule"
+              value={
+                draft.scheduleAt
+                  ? readableDate(draft.scheduleAt, scheduleTimeZone)
+                  : "Send immediately"
+              }
+            />
           </div>
         </div>
 
@@ -1114,27 +1167,61 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function readableDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function toLocalDateTimeValue(value: string | undefined) {
+function toZonedDateTimeValue(value: string | undefined, timeZone: string) {
   if (!value) return "";
 
-  const date = new Date(value);
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  const hours = `${date.getHours()}`.padStart(2, "0");
-  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+  const parts = getTimeZoneParts(new Date(value), timeZone);
+  const year = String(parts.year);
+  const month = `${parts.month}`.padStart(2, "0");
+  const day = `${parts.day}`.padStart(2, "0");
+  const hours = `${parts.hour}`.padStart(2, "0");
+  const minutes = `${parts.minute}`.padStart(2, "0");
 
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function parseZonedDateTimeValue(value: string, timeZone: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+
+  if (!match) {
+    return undefined;
+  }
+
+  const [, yearText, monthText, dayText, hourText, minuteText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  const naiveUtc = Date.UTC(year, month - 1, day, hour, minute);
+  let offset = getTimeZoneOffsetMilliseconds(new Date(naiveUtc), timeZone);
+  let timestamp = naiveUtc - offset;
+  let candidate = new Date(timestamp);
+  const correctedOffset = getTimeZoneOffsetMilliseconds(candidate, timeZone);
+
+  if (correctedOffset !== offset) {
+    offset = correctedOffset;
+    timestamp = naiveUtc - offset;
+    candidate = new Date(timestamp);
+  }
+
+  if (toZonedDateTimeValue(candidate.toISOString(), timeZone) !== value) {
+    return undefined;
+  }
+
+  return candidate.toISOString();
+}
+
 function resolveCampaignCopyError(data: CampaignCopyResponse) {
+  return resolveRouteErrorMessage(data, "Unable to generate campaign options.");
+}
+
+function resolveRouteErrorMessage(data: RouteResponse, fallbackMessage: string) {
   if (typeof data.error === "string") {
     return data.error;
   }
@@ -1143,5 +1230,64 @@ function resolveCampaignCopyError(data: CampaignCopyResponse) {
     return data.error.message;
   }
 
-  return "Unable to generate campaign options.";
+  return fallbackMessage;
+}
+
+function resolveTimeZone(timeZone: string) {
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone }).resolvedOptions().timeZone;
+  } catch {
+    return "UTC";
+  }
+}
+
+function readableDate(value: string, timeZone: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone,
+  }).format(new Date(value));
+}
+
+function getTimeZoneParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const lookup = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+
+  return {
+    year: lookup.year,
+    month: lookup.month,
+    day: lookup.day,
+    hour: lookup.hour,
+    minute: lookup.minute,
+    second: lookup.second,
+  };
+}
+
+function getTimeZoneOffsetMilliseconds(date: Date, timeZone: string) {
+  const parts = getTimeZoneParts(date, timeZone);
+  const utcTimestamp = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
+
+  return utcTimestamp - date.getTime();
 }
