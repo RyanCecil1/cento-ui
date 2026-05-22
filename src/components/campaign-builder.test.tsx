@@ -119,8 +119,8 @@ describe("CampaignBuilder hardening", () => {
   it("only unlocks later step chips when the prior steps are valid", () => {
     renderBuilder();
 
-    const audienceChip = screen.getByRole("button", { name: /audience/i });
-    const previewChip = screen.getByRole("button", { name: /preview/i });
+    const audienceChip = screen.getByRole("button", { name: /^2\s*Audience$/i });
+    const previewChip = screen.getByRole("button", { name: /^4\s*Preview$/i });
 
     expect(audienceChip).toBeDisabled();
     expect(previewChip).toBeDisabled();

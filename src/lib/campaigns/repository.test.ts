@@ -58,11 +58,11 @@ describe("campaign draft repository", () => {
 
     vi.mocked(resolveWorkspaceAudience).mockResolvedValue({
       contacts: [],
+      deliverable: [],
       summary: {
-        total: 25,
         deliverable: 20,
         invalid: 2,
-        duplicate: 1,
+        duplicates: 1,
         suppressed: 2,
       },
     });
@@ -110,18 +110,17 @@ describe("campaign draft repository", () => {
   it("rejects invalid selectedCandidateId during persistence", async () => {
     const { resolveWorkspaceAudience } = await import("@/lib/contacts/repository");
     const {
-      CampaignDraftPersistenceError,
       campaignDraftPersistenceErrorCodes,
       createCampaignDraft,
     } = await import("@/lib/campaigns/repository");
 
     vi.mocked(resolveWorkspaceAudience).mockResolvedValue({
       contacts: [],
+      deliverable: [],
       summary: {
-        total: 25,
         deliverable: 20,
         invalid: 2,
-        duplicate: 1,
+        duplicates: 1,
         suppressed: 2,
       },
     });
@@ -136,7 +135,7 @@ describe("campaign draft repository", () => {
           },
         }),
       ),
-    ).rejects.toMatchObject<Partial<CampaignDraftPersistenceError>>({
+    ).rejects.toMatchObject({
       code: campaignDraftPersistenceErrorCodes.invalidAiComposeSelection,
     });
   });
