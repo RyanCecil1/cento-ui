@@ -1,9 +1,12 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
-import { ZodError } from "zod";
 
-import type { CampaignCopyRequest } from "@/lib/ai/types";
+import {
+  CampaignCopyError,
+  campaignCopyErrorCodes,
+  type CampaignCopyRequest,
+} from "@/lib/ai/types";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/ai/deepseek", () => ({
@@ -53,7 +56,19 @@ describe("normalizeCampaignCopyResult", () => {
           { label: "Friendly", body: "Message two" },
         ],
       }),
-    ).toThrow(ZodError);
+    ).toThrow(campaignCopyErrorCodes.invalidProviderPayload);
+  });
+
+  it("rejects schema-valid provider payloads that are not SMS-safe", () => {
+    expect(() =>
+      normalizeCampaignCopyResult({
+        candidates: [
+          { label: "Direct", body: "Message one" },
+          { label: "Friendly", body: "Insert your message here" },
+          { label: "Urgent", body: "Message three" },
+        ],
+      }),
+    ).toThrow(campaignCopyErrorCodes.invalidProviderPayload);
   });
 });
 
@@ -84,9 +99,37 @@ describe("generateCampaignCopy", () => {
     ]);
   });
 
-  it("surfaces malformed provider JSON as a hard failure", async () => {
+  it("returns a stable malformed-provider error for invalid JSON", async () => {
     vi.mocked(requestDeepSeekChatCompletion).mockResolvedValue("{not-json");
 
-    await expect(generateCampaignCopy(baseRequest)).rejects.toThrow(SyntaxError);
+    await expect(generateCampaignCopy(baseRequest)).rejects.toMatchObject({
+      code: campaignCopyErrorCodes.malformedProviderResponse,
+    });
+  });
+
+  it("returns a stable invalid-payload error for multiline SMS bodies", async () => {
+    vi.mocked(requestDeepSeekChatCompletion).mockResolvedValue(
+      JSON.stringify({
+        candidates: [
+          { label: "Direct", body: "Message one" },
+          { label: "Friendly", body: "Line one\nLine two" },
+          { label: "Urgent", body: "Message three" },
+        ],
+      }),
+    );
+
+    await expect(generateCampaignCopy(baseRequest)).rejects.toMatchObject({
+      code: campaignCopyErrorCodes.invalidProviderPayload,
+    });
+  });
+
+  it("preserves stable upstream client errors without leaking low-level exceptions", async () => {
+    vi.mocked(requestDeepSeekChatCompletion).mockRejectedValue(
+      new CampaignCopyError(campaignCopyErrorCodes.notConfigured),
+    );
+
+    await expect(generateCampaignCopy(baseRequest)).rejects.toMatchObject({
+      code: campaignCopyErrorCodes.notConfigured,
+    });
   });
 });

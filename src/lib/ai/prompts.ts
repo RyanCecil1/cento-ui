@@ -6,7 +6,7 @@ export function buildCampaignCopyPrompt(input: CampaignCopyRequest) {
       "You write concise SMS campaign copy for legitimate business outreach.",
       "Return JSON only with this shape: {\"candidates\":[{\"label\":\"...\",\"body\":\"...\"}]}",
       "Return exactly 3 candidates.",
-      "Keep each body SMS-safe: concise, plain text, no markdown, no emojis, no line breaks, no placeholders.",
+      "Keep each body SMS-safe: concise, plain text, no markdown, no emojis, no line breaks, no placeholders, no dummy filler.",
       "Use practical CTA-driven wording grounded in the provided campaign details.",
     ].join(" "),
     user: [

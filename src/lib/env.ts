@@ -15,7 +15,7 @@ const EnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   DEEPSEEK_API_KEY: OptionalServerSecretSchema,
   SMS_PROVIDER: z.enum(["demo", "hubtel"]).default("demo"),
-  PAYMENT_PROVIDER_WEBHOOK_SECRET: z.string().min(1).default("demo-webhook-secret"),
+  PAYMENT_PROVIDER_WEBHOOK_SECRET: z.string().min(1),
   HUBTEL_API_BASE_URL: z.string().url().optional(),
   HUBTEL_CLIENT_ID: z.string().min(1).optional(),
   HUBTEL_CLIENT_SECRET: z.string().min(1).optional(),
