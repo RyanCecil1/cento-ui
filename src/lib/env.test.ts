@@ -28,6 +28,19 @@ describe("parseEnv", () => {
       }),
     ).toThrow("Invalid environment variable: NEXT_PUBLIC_SUPABASE_URL");
   });
+
+  it("allows demo runtime without a DeepSeek key", () => {
+    const parsed = parseEnv({
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      SMS_PROVIDER: "demo",
+      PAYMENT_PROVIDER_WEBHOOK_SECRET: "webhook-secret",
+    });
+
+    expect(parsed.SMS_PROVIDER).toBe("demo");
+    expect("DEEPSEEK_API_KEY" in parsed).toBe(false);
+  });
 });
 
 describe("lazy env loading", () => {
@@ -79,6 +92,7 @@ describe("lazy env loading", () => {
       expect(envModule.env.NEXT_PUBLIC_SUPABASE_URL).toBe(
         "https://example.supabase.co",
       );
+      expect(envModule.env.DEEPSEEK_API_KEY).toBeUndefined();
       expect(envModule.env.PAYMENT_PROVIDER_WEBHOOK_SECRET).toBe(
         "webhook-secret",
       );
