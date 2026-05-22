@@ -3,6 +3,8 @@ import { Bell, Command, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import { appNavGroups } from "@/data/site";
 import { ThemeToggle } from "./theme-toggle";
 
+const mobileNavItems = appNavGroups.flatMap((group) => group.items);
+
 export function AppShell({
   title,
   subtitle,
@@ -75,18 +77,48 @@ export function AppShell({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="app-shell-chip flex h-11 items-center gap-3 rounded-full px-4 text-sm text-[var(--app-muted-2)]">
                   <MagnifyingGlass size={17} />
-                  Search campaigns, contacts, reports
+                  Search coming soon
                 </div>
                 <div className="flex items-center gap-2">
                   <ThemeToggle compact />
-                  <button className="app-shell-chip flex h-11 w-11 items-center justify-center rounded-full text-[var(--app-muted)]">
+                  <button
+                    type="button"
+                    className="app-shell-chip flex h-11 w-11 items-center justify-center rounded-full text-[var(--app-muted)] opacity-70"
+                    aria-label="Notifications panel coming soon"
+                    title="Notifications panel coming soon"
+                    disabled
+                  >
                     <Bell size={17} />
                   </button>
-                  <button className="app-shell-chip flex h-11 w-11 items-center justify-center rounded-full text-[var(--app-muted)]">
+                  <button
+                    type="button"
+                    className="app-shell-chip flex h-11 w-11 items-center justify-center rounded-full text-[var(--app-muted)] opacity-70"
+                    aria-label="Command palette coming soon"
+                    title="Command palette coming soon"
+                    disabled
+                  >
                     <Command size={17} />
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-4 lg:hidden">
+              <nav aria-label="Primary app navigation" className="flex gap-2 overflow-x-auto pb-1">
+                {mobileNavItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="app-shell-chip inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium text-[var(--app-text)]"
+                  >
+                    <item.icon size={16} weight="bold" />
+                    {item.label}
+                  </Link>
+                ))}
+                <div className="app-shell-highlight inline-flex h-10 shrink-0 items-center rounded-full px-4 text-sm text-[var(--app-muted)]">
+                  {walletBalance.toLocaleString()} credits
+                </div>
+              </nav>
             </div>
           </header>
 

@@ -170,7 +170,8 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: none;
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
   box-shadow: var(--shadow-focus);
 }
 
@@ -290,48 +291,48 @@ textarea:focus-visible {
   border-color: var(--app-border);
 }
 
-.app-root .bg-\[\#121018\] {
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .bg-\[\#121018\] {
   background: var(--app-panel) !important;
 }
 
-.app-root .bg-white\/5,
-.app-root .bg-black\/20 {
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .bg-white\/5,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .bg-black\/20 {
   background: var(--app-panel-soft) !important;
 }
 
-.app-root .border-white\/10 {
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .border-white\/10 {
   border-color: var(--app-border) !important;
 }
 
-.app-root .divide-white\/10 > :not(:last-child) {
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .divide-white\/10 > :not(:last-child) {
   border-color: var(--app-border) !important;
 }
 
-.app-root .text-white {
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white {
   color: var(--app-text) !important;
 }
 
-.app-root .text-white\/72,
-.app-root .text-white\/70,
-.app-root .text-white\/64,
-.app-root .text-white\/62 {
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/72,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/70,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/64,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/62 {
   color: var(--app-muted-strong) !important;
 }
 
-.app-root .text-white\/58,
-.app-root .text-white\/52,
-.app-root .text-white\/50,
-.app-root .text-white\/48,
-.app-root .text-white\/42,
-.app-root .text-white\/36,
-.app-root .text-white\/32 {
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/58,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/52,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/50,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/48,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/42,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/36,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .text-white\/32 {
   color: var(--app-muted) !important;
 }
 
-.app-root .bg-primary.text-white,
-.app-root .bg-primary .text-white,
-.app-root .keep-white,
-.app-root .keep-white * {
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .bg-primary.text-white,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .bg-primary .text-white,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .keep-white,
+:is(.app-card, .app-card-soft, .app-card-gradient, .app-shell-pane, .app-shell-glass, .app-shell-chip, .app-shell-highlight) .keep-white * {
   color: #fff !important;
 }
 
@@ -406,5 +407,17 @@ textarea:focus-visible {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 3px;
+    box-shadow: none;
   }
 }

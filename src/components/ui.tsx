@@ -37,6 +37,17 @@ export function Button({
   const classes = `inline-flex h-11 items-center justify-center gap-2 rounded-[16px] px-4 text-sm font-semibold tracking-[-0.01em] ${buttonStyles[variant]} ${disabled ? "pointer-events-none opacity-50" : ""} ${className}`;
 
   if (href) {
+    if (disabled) {
+      return (
+        <span
+          className={classes}
+          aria-disabled="true"
+        >
+          {children}
+        </span>
+      );
+    }
+
     return (
       <Link href={href} className={classes}>
         {children}
