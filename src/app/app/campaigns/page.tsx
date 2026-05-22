@@ -1,48 +1,78 @@
+import Link from "next/link";
+import { getCurrentViewer } from "@/lib/auth/current-viewer";
+import { listCampaigns } from "@/lib/campaigns/repository";
+import { formatCredits, formatNumber, formatShortDateTime } from "@/lib/format";
 import { AppSection, Button } from "@/components/ui";
-import { recentCampaigns } from "@/data/site";
 
-export default function CampaignsPage() {
+export default async function CampaignsPage() {
+  const viewer = await getCurrentViewer();
+  if (!viewer) return null;
+
+  const campaigns = await listCampaigns(viewer.workspace.id);
+  const counts = {
+    all: campaigns.length,
+    queued: campaigns.filter((campaign) => campaign.state === "queued").length,
+    completed: campaigns.filter((campaign) => campaign.state.startsWith("completed")).length,
+    needsAttention: campaigns.filter((campaign) => campaign.state === "needs_attention").length,
+  };
+
   return (
     <AppSection
       title="Campaigns"
-      description="A focused campaign ledger for scheduled, delivered, and review-ready sends. The data is local for now, but the hierarchy is production-shaped."
+      description="Track draft, queued, sent, paused, and blocked campaigns from a single execution ledger."
       action={<Button href="/app/campaigns/new">Create Campaign</Button>}
     >
       <section className="rounded-lg border border-white/10 bg-[#121018]">
         <div className="flex flex-wrap gap-2 border-b border-white/10 p-4">
-          {["All campaigns", "Scheduled", "Delivered", "Needs review"].map((filter) => (
-            <button
-              key={filter}
-              className={`rounded-md px-3 py-2 text-sm ${
-                filter === "All campaigns"
-                  ? "bg-primary text-white"
-                  : "border border-white/10 text-white/58 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
+          <Chip label="All campaigns" value={counts.all} active />
+          <Chip label="Queued" value={counts.queued} />
+          <Chip label="Delivered" value={counts.completed} />
+          <Chip label="Needs attention" value={counts.needsAttention} />
         </div>
 
         <div className="divide-y divide-white/10">
-          {recentCampaigns.map((item) => (
+          {campaigns.map((item) => (
             <div
-              key={item.name}
+              key={item.id}
               className="grid gap-3 px-5 py-4 text-sm md:grid-cols-[1.35fr_0.75fr_0.85fr_0.75fr_0.65fr]"
             >
               <div>
-                <p className="font-medium text-white">{item.name}</p>
-                <p className="mt-1 text-xs text-white/42">{item.audience}</p>
+                <Link href={`/app/campaigns/${item.id}`} className="font-medium text-white hover:text-primary">
+                  {item.name}
+                </Link>
+                <p className="mt-1 text-xs text-white/42">{item.audienceFilterSummary}</p>
               </div>
-              <Cell label="Status" value={item.status} />
-              <Cell label="Send time" value={item.sentAt} />
-              <Cell label="Recipients" value={item.recipients} />
-              <Cell label="Cost" value={item.cost} />
+              <Cell label="Status" value={item.state.replaceAll("_", " ")} />
+              <Cell label="Send time" value={formatShortDateTime(item.scheduleAt ?? item.updatedAt)} />
+              <Cell label="Recipients" value={formatNumber(item.estimatedRecipients)} />
+              <Cell label="Cost" value={formatCredits(item.estimatedCredits)} />
             </div>
           ))}
         </div>
       </section>
     </AppSection>
+  );
+}
+
+function Chip({
+  label,
+  value,
+  active = false,
+}: {
+  label: string;
+  value: number;
+  active?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-md px-3 py-2 text-sm ${
+        active
+          ? "bg-primary text-white"
+          : "border border-white/10 text-white/58"
+      }`}
+    >
+      {label} ({value})
+    </div>
   );
 }
 

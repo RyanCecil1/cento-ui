@@ -6,10 +6,14 @@ import { ThemeToggle } from "./theme-toggle";
 export function AppShell({
   title,
   subtitle,
+  workspaceName,
+  walletBalance,
   children,
 }: {
   title: string;
   subtitle: string;
+  workspaceName: string;
+  walletBalance: number;
   children: React.ReactNode;
 }) {
   return (
@@ -21,7 +25,7 @@ export function AppShell({
               C
             </div>
             <div>
-              <div className="display-title text-lg font-medium text-[var(--app-text)]">Cento</div>
+              <div className="display-title text-lg font-medium text-[var(--app-text)]">{workspaceName}</div>
               <div className="mono-number mt-1 text-[10px] uppercase text-[var(--app-muted-2)]">
                 Workspace
               </div>
@@ -52,7 +56,7 @@ export function AppShell({
 
           <div className="mt-8 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-soft)] p-4">
             <p className="mono-number text-[11px] uppercase text-[var(--app-muted-2)]">Wallet</p>
-            <p className="mono-number mt-3 text-2xl text-[var(--app-text)]">12,420</p>
+            <p className="mono-number mt-3 text-2xl text-[var(--app-text)]">{walletBalance.toLocaleString()}</p>
             <p className="mt-2 text-xs leading-5 text-[var(--app-muted)]">Credits ready for queued campaigns.</p>
           </div>
         </aside>

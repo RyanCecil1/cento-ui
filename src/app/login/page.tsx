@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { SessionForm } from "@/components/auth/session-form";
 import { MarketingHeader } from "@/components/site-chrome";
-import { Button } from "@/components/ui";
 
 export default function LoginPage() {
   return (
@@ -23,11 +23,7 @@ export default function LoginPage() {
 
           <div className="rounded-lg border border-line bg-[var(--cream-50)] p-6">
             <div className="space-y-4">
-              <MockInput label="Email address" value="operator@cento.local" />
-              <MockInput label="Password" value="••••••••••••" />
-              <Button href="/app" className="w-full">
-                Enter Workspace
-              </Button>
+              <SessionForm mode="login" />
               <p className="text-sm text-muted">
                 New here?{" "}
                 <Link href="/signup" className="font-medium text-primary">
@@ -39,14 +35,5 @@ export default function LoginPage() {
         </div>
       </main>
     </>
-  );
-}
-
-function MockInput({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-line bg-white p-4">
-      <p className="mono-number text-xs uppercase text-muted">{label}</p>
-      <p className="mt-3 text-sm text-foreground">{value}</p>
-    </div>
   );
 }

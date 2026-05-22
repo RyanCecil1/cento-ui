@@ -6,7 +6,9 @@ type ButtonProps = {
   children: ReactNode;
   variant?: "primary" | "secondary" | "ghost" | "dark" | "light" | "outlineDark";
   className?: string;
-  onClick?: () => void;
+  onClick?: () => void | Promise<void>;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
 };
 
 const buttonStyles = {
@@ -27,8 +29,10 @@ export function Button({
   variant = "primary",
   className = "",
   onClick,
+  type = "button",
+  disabled = false,
 }: ButtonProps) {
-  const classes = `inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium ${buttonStyles[variant]} ${className}`;
+  const classes = `inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium ${buttonStyles[variant]} ${disabled ? "pointer-events-none opacity-50" : ""} ${className}`;
 
   if (href) {
     return (
@@ -39,7 +43,7 @@ export function Button({
   }
 
   return (
-    <button className={classes} onClick={onClick}>
+    <button className={classes} onClick={onClick} type={type} disabled={disabled}>
       {children}
     </button>
   );

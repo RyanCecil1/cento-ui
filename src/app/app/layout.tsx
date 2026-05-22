@@ -1,14 +1,21 @@
+import { getCurrentViewer } from "@/lib/auth/current-viewer";
+import { getWorkspaceBalance } from "@/lib/wallet/repository";
 import { AppShell } from "@/components/app-shell";
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const viewer = await getCurrentViewer();
+  const walletBalance = viewer ? await getWorkspaceBalance(viewer.workspace.id) : 0;
+
   return (
     <AppShell
-      title="Workspace preview"
-      subtitle="A UI-first command surface for campaigns, contacts, wallet balance, reporting, and message drafting."
+      title={viewer?.workspace.name ?? "Workspace"}
+      subtitle={viewer ? `${viewer.workspace.primaryAudience} • ${viewer.workspace.useCase}` : "SMS workspace"}
+      workspaceName={viewer?.workspace.name ?? "Cento"}
+      walletBalance={walletBalance}
     >
       {children}
     </AppShell>
