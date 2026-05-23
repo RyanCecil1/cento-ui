@@ -191,8 +191,9 @@ textarea:focus-visible {
 }
 
 .mono-number {
-  font-family: var(--font-code), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-display), Arial, Helvetica, sans-serif;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .surface-panel {
@@ -377,6 +378,9 @@ textarea {
   border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--surface-alt) 94%, white 6%);
   color: currentColor;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  font-size: 0.975rem;
+  line-height: 1.55;
   padding: 0.9rem 1rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
@@ -560,9 +564,10 @@ textarea::placeholder {
 }
 
 .ark-section-eyebrow {
-  font-family: var(--font-code), ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.78rem;
-  letter-spacing: 0.22em;
+  font-family: var(--font-display), Arial, Helvetica, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--primary);
 }
@@ -574,6 +579,14 @@ textarea::placeholder {
   letter-spacing: -0.04em;
   color: #243d5c;
   font-weight: 600;
+}
+
+.marketing-field-label {
+  font-family: var(--font-display), Arial, Helvetica, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .ark-trust-card,

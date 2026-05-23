@@ -256,7 +256,7 @@ export function TrustBand() {
           {trustPanels.map((panel) => (
             <div key={panel.title} className="ark-trust-card ark-animate-card">
               <div>
-                <p className="mono-number text-xs uppercase text-primary">{panel.title}</p>
+                <p className="marketing-field-label text-primary">{panel.title}</p>
                 <h3 className="mt-3 text-[1.55rem] font-semibold text-[#233d5a]">{panel.value}</h3>
                 <p className="mt-3 text-[15px] leading-7 text-muted">{panel.detail}</p>
               </div>
@@ -304,7 +304,7 @@ export function HowItWorks() {
             <div key={step.title} className="ark-step-card ark-animate-card">
               <div className="flex items-center justify-between">
                 <step.icon size={20} weight="bold" className="text-primary" />
-                <span className="mono-number text-sm text-muted">0{index + 1}</span>
+                <span className="marketing-field-label text-muted">0{index + 1}</span>
               </div>
               <h3 className="mt-5 text-[1.06rem] font-semibold text-[#233d5a]">{step.title}</h3>
               <p className="mt-3 text-[15px] leading-6 text-muted">{step.detail}</p>
@@ -402,7 +402,7 @@ export function IndustryStrip() {
       <div className="grid gap-6 md:grid-cols-2">
         {sectors.map((sector, index) => (
           <div key={sector.title} className="ark-sector-card ark-animate-card">
-            <p className="mono-number text-xs uppercase text-primary">0{index + 1}</p>
+            <p className="marketing-field-label text-primary">0{index + 1}</p>
             <h3 className="mt-4 text-[1.45rem] font-semibold text-[#233d5a]">{sector.title}</h3>
             <p className="mt-3 text-[15px] leading-7 text-muted">{sector.summary}</p>
           </div>
@@ -417,7 +417,7 @@ export function CTASection() {
     <section className="page-shell py-18">
       <div className="ark-cta-panel">
         <div>
-          <p className="mono-number text-xs uppercase text-primary">Start with Cento</p>
+          <p className="marketing-field-label text-primary">Start with Cento</p>
           <h2 className="ark-cta-title mt-4 text-4xl font-semibold leading-[1.18] text-[#233d5a] sm:text-5xl">
             Create the account, set the workspace once, and move straight into your operational dashboard.
           </h2>

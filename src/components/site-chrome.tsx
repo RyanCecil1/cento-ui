@@ -13,7 +13,7 @@ export function MarketingHeader() {
           </div>
           <div>
             <p className="display-title text-[1.85rem] font-semibold leading-none text-[#203a59]">Cento</p>
-            <p className="mono-number mt-1 text-[10px] uppercase tracking-[0.22em] text-muted">SMS workspace</p>
+            <p className="marketing-field-label mt-1 text-muted">SMS workspace</p>
           </div>
         </Link>
 

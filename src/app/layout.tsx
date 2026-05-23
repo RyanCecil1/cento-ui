@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import {
   JetBrains_Mono,
   Montserrat,
@@ -59,7 +60,9 @@ export default function RootLayout({
       className={`${bodySans.variable} ${displaySans.variable} ${monoSans.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script id="cento-theme-script" strategy="beforeInteractive">
+          {themeScript}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

@@ -142,7 +142,7 @@ export function SalesInquiryForm() {
         </Field>
 
         <div className="rounded-[20px] border border-line bg-[var(--cream-50)] p-4">
-          <p className="mono-number text-xs uppercase text-primary">Credit check</p>
+          <p className="marketing-field-label text-primary">Credit check</p>
           <p className="mt-3 text-sm leading-6 text-foreground">
             The largest published bundle on the pricing page is{" "}
             <span className="font-semibold">{highestPublishedCreditBundle.toLocaleString()} credits</span>.
@@ -176,7 +176,7 @@ function Field({
 }) {
   return (
     <label className="grid gap-2 text-sm text-foreground">
-      <span className="mono-number text-xs uppercase text-muted">{label}</span>
+      <span className="marketing-field-label text-muted">{label}</span>
       {children}
     </label>
   );

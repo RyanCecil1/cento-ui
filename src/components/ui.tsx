@@ -75,7 +75,7 @@ export function SectionIntro({
 }) {
   return (
     <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
-      <p className="mono-number text-xs uppercase text-primary">
+      <p className="marketing-field-label text-primary">
         {eyebrow}
       </p>
       <h2 className="display-title mt-4 text-3xl leading-[1.08] font-medium text-foreground sm:text-5xl">

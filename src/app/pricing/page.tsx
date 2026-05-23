@@ -16,7 +16,7 @@ export default function PricingPage() {
         <section className="page-shell py-18">
           <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr] xl:items-end">
             <div>
-              <p className="mono-number text-xs uppercase text-primary">Pricing</p>
+              <p className="marketing-field-label text-primary">Pricing</p>
               <h1 className="display-title mt-4 max-w-3xl text-5xl font-semibold leading-[1.02] text-foreground">
                 Choose the operating tier that matches how your team sends.
               </h1>

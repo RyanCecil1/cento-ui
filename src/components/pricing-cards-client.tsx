@@ -35,7 +35,7 @@ export function PricingCardsClient() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{tier.name}</p>
-                  <p className="mono-number mt-4 text-[2rem] text-foreground">{tier.price}</p>
+                  <p className="display-title mt-4 text-[2rem] leading-none font-semibold text-foreground">{tier.price}</p>
                 </div>
                 <span
                   className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
@@ -66,7 +66,7 @@ export function PricingCardsClient() {
       </div>
 
       <aside className="ark-price-card ark-price-aside ark-animate-card rounded-[28px] p-6">
-        <p className="mono-number text-xs uppercase text-primary">Selected plan</p>
+        <p className="marketing-field-label text-primary">Selected plan</p>
         <h2 className="display-title mt-4 text-[2.4rem] font-semibold text-foreground">
           {selectedTier?.name}
         </h2>
@@ -74,8 +74,8 @@ export function PricingCardsClient() {
           This selection becomes the next step. Starter and Growth continue directly into account creation. Scale routes into a guided sales path.
         </p>
         <div className="mt-6 rounded-[22px] bg-[linear-gradient(180deg,#f7f0ff_0%,#ffffff_100%)] p-5">
-          <p className="mono-number text-[11px] uppercase text-primary">Bundle details</p>
-          <p className="mono-number mt-3 text-3xl text-foreground">{selectedTier?.price}</p>
+          <p className="marketing-field-label text-primary">Bundle details</p>
+          <p className="display-title mt-3 text-3xl font-semibold text-foreground">{selectedTier?.price}</p>
           <p className="mt-2 text-sm font-semibold text-primary">{selectedTier?.credits}</p>
         </div>
         <div className="mt-7 flex flex-col gap-3">

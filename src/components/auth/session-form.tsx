@@ -214,7 +214,7 @@ function Field({
 }) {
   return (
     <label className="grid gap-2 text-sm text-foreground">
-      <span className="mono-number text-xs uppercase text-muted">{label}</span>
+      <span className="marketing-field-label text-muted">{label}</span>
       {children}
     </label>
   );
