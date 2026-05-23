@@ -1,0 +1,8 @@
+# Cento contact upload template
+# Required columns: full_name, phone_e164
+# Optional columns: tags, group_name
+# Keep phone numbers in international format, for example +233240000000
+# Separate multiple tags or groups with |
+full_name,phone_e164,tags,group_name
+Ama Mensah,+233240000001,parents|pta,PTA Parents
+Kojo Addo,+233240000002,members|youth,Youth Fellowship

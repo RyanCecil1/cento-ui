@@ -61,7 +61,7 @@ describe("POST /api/ai/campaign-copy", () => {
     vi.mocked(getCurrentViewer).mockResolvedValue({
       user: { id: "user_123" },
       workspace: { id: "workspace_123" },
-      token: null,
+      token: "",
     } as Awaited<ReturnType<typeof getCurrentViewer>>);
 
     const response = await POST(

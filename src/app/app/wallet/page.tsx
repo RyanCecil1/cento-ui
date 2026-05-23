@@ -2,7 +2,7 @@ import { TopUpActions } from "@/components/wallet/top-up-actions";
 import { getCurrentViewer } from "@/lib/auth/current-viewer";
 import { formatCredits } from "@/lib/format";
 import { getWorkspaceBalance, listWalletEntries } from "@/lib/wallet/repository";
-import { AppSection, Button } from "@/components/ui";
+import { AppSection } from "@/components/ui";
 
 const topUpBundles = [
   { name: "Starter", amountGhs: 80, credits: 1500 },
@@ -22,8 +22,7 @@ export default async function WalletPage() {
   return (
     <AppSection
       title="Wallet"
-      description="Wallet screens need to feel exact and calm because credit trust is one of the product’s highest-risk UX areas."
-      action={<Button variant="outlineDark">Prepaid ledger</Button>}
+      description="Track wallet balance, top-up options, and every credit movement in one place."
     >
       <div className="grid gap-6 xl:grid-cols-[0.88fr_1.12fr]">
         <section className="keep-white rounded-lg border border-primary/40 bg-[linear-gradient(180deg,#3d2170_0%,#17101f_100%)] p-6 text-white">

@@ -50,6 +50,7 @@ const defaultProps = {
     },
   ],
   walletBalance: 100,
+  workspaceId: "workspace_1",
 };
 
 function renderBuilder(timezone = "Africa/Accra") {
@@ -72,35 +73,11 @@ async function completeComposeFlow() {
   fireEvent.click(screen.getByRole("button", { name: /parents \(1\)/i }));
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-  fireEvent.change(screen.getByLabelText("Goal"), {
+  fireEvent.change(screen.getByLabelText("Main message"), {
+    target: { value: "PTA meeting starts tomorrow at 10 AM. Please arrive by 9:45 AM." },
+  });
+  fireEvent.change(screen.getByLabelText("Message goal"), {
     target: { value: "Remind parents about tomorrow's meeting" },
-  });
-  fireEvent.change(screen.getByLabelText("Urgency"), {
-    target: { value: "Send this evening" },
-  });
-  fireEvent.change(screen.getByLabelText("Offer or announcement"), {
-    target: { value: "PTA meeting at 10 AM" },
-  });
-  fireEvent.change(screen.getByLabelText("Call to action"), {
-    target: { value: "Arrive by 9:45 AM" },
-  });
-  fireEvent.change(screen.getByLabelText("Sender context"), {
-    target: { value: "School admin office" },
-  });
-  fireEvent.change(screen.getByLabelText("Audience summary"), {
-    target: { value: "Parents in Group A" },
-  });
-
-  fireEvent.click(screen.getByRole("button", { name: /generate 3 options/i }));
-
-  await waitFor(() => {
-    expect(screen.getByRole("button", { name: /choose direct/i })).toBeInTheDocument();
-  });
-
-  fireEvent.click(screen.getByRole("button", { name: /choose direct/i }));
-
-  await waitFor(() => {
-    expect(screen.getByLabelText("Final message")).toHaveValue("Message one");
   });
 }
 
@@ -109,6 +86,7 @@ describe("CampaignBuilder hardening", () => {
     push.mockReset();
     refresh.mockReset();
     fetchMock.mockReset();
+    window.localStorage.clear();
     vi.stubGlobal("fetch", fetchMock);
   });
 
@@ -119,8 +97,8 @@ describe("CampaignBuilder hardening", () => {
   it("only unlocks later step chips when the prior steps are valid", () => {
     renderBuilder();
 
-    const audienceChip = screen.getByRole("button", { name: /^2\s*Audience$/i });
-    const previewChip = screen.getByRole("button", { name: /^4\s*Preview$/i });
+    const audienceChip = screen.getByRole("button", { name: "Step 2: Audience" });
+    const previewChip = screen.getByRole("button", { name: "Step 4: Preview" });
 
     expect(audienceChip).toBeDisabled();
     expect(previewChip).toBeDisabled();
@@ -141,38 +119,21 @@ describe("CampaignBuilder hardening", () => {
     expect(screen.queryByText("Matched contacts")).not.toBeInTheDocument();
   });
 
-  it("requires candidate selection before the final message can be edited or continued", async () => {
-    fetchMock.mockResolvedValueOnce(
-      mockJsonResponse({
-        candidates: [
-          { id: "candidate-1", label: "Direct", body: "Message one" },
-          { id: "candidate-2", label: "Friendly", body: "Message two" },
-          { id: "candidate-3", label: "Urgent", body: "Message three" },
-        ],
-      }),
-    );
-
+  it("allows manual compose without requiring an AI candidate selection", async () => {
     renderBuilder();
     await completeComposeFlow();
 
     const continueButton = screen.getByRole("button", { name: "Continue" });
-    const finalMessage = screen.getByLabelText("Final message");
+    const finalMessage = screen.getByLabelText("Main message");
 
-    expect(finalMessage).not.toBeDisabled();
+    expect(finalMessage).toHaveValue(
+      "PTA meeting starts tomorrow at 10 AM. Please arrive by 9:45 AM.",
+    );
     expect(continueButton).toBeEnabled();
   });
 
   it("stores the scheduled send in the workspace timezone instead of browser local time", async () => {
     fetchMock
-      .mockResolvedValueOnce(
-        mockJsonResponse({
-          candidates: [
-            { id: "candidate-1", label: "Direct", body: "Message one" },
-            { id: "candidate-2", label: "Friendly", body: "Message two" },
-            { id: "candidate-3", label: "Urgent", body: "Message three" },
-          ],
-        }),
-      )
       .mockResolvedValueOnce(mockJsonResponse({ id: "campaign_1" }))
       .mockResolvedValueOnce(mockJsonResponse({ success: true }));
 
@@ -182,7 +143,7 @@ describe("CampaignBuilder hardening", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    const scheduleInput = screen.getByLabelText(/Schedule/);
+    const scheduleInput = screen.getByLabelText(/Schedule \(workspace timezone:/i);
     fireEvent.change(scheduleInput, {
       target: { value: "2026-06-15T07:30" },
     });
@@ -193,7 +154,7 @@ describe("CampaignBuilder hardening", () => {
       expect(push).toHaveBeenCalledWith("/app/campaigns/campaign_1");
     });
 
-    const saveRequest = fetchMock.mock.calls[1]?.[1];
+    const saveRequest = fetchMock.mock.calls[0]?.[1];
     const savedDraft = JSON.parse(String(saveRequest?.body));
 
     expect(savedDraft.scheduleAt).toBe("2026-06-15T11:30:00.000Z");
@@ -201,15 +162,6 @@ describe("CampaignBuilder hardening", () => {
 
   it("surfaces structured save errors from the campaigns route", async () => {
     fetchMock
-      .mockResolvedValueOnce(
-        mockJsonResponse({
-          candidates: [
-            { id: "candidate-1", label: "Direct", body: "Message one" },
-            { id: "candidate-2", label: "Friendly", body: "Message two" },
-            { id: "candidate-3", label: "Urgent", body: "Message three" },
-          ],
-        }),
-      )
       .mockResolvedValueOnce(
         mockJsonResponse(
           {
@@ -240,15 +192,6 @@ describe("CampaignBuilder hardening", () => {
 
   it("blocks redirect and surfaces the immediate runner failure message", async () => {
     fetchMock
-      .mockResolvedValueOnce(
-        mockJsonResponse({
-          candidates: [
-            { id: "candidate-1", label: "Direct", body: "Message one" },
-            { id: "candidate-2", label: "Friendly", body: "Message two" },
-            { id: "candidate-3", label: "Urgent", body: "Message three" },
-          ],
-        }),
-      )
       .mockResolvedValueOnce(mockJsonResponse({ id: "campaign_1" }))
       .mockResolvedValueOnce(mockJsonResponse({ success: true }))
       .mockResolvedValueOnce(

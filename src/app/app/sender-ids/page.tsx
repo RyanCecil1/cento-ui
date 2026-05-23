@@ -1,7 +1,7 @@
 import { SenderIdRequestForm } from "@/components/sender-id-request-form";
 import { getCurrentViewer } from "@/lib/auth/current-viewer";
 import { listSenderIds } from "@/lib/sender-ids/repository";
-import { AppSection, Button } from "@/components/ui";
+import { AppSection } from "@/components/ui";
 
 export default async function SenderIdsPage() {
   const viewer = await getCurrentViewer();
@@ -12,8 +12,7 @@ export default async function SenderIdsPage() {
   return (
     <AppSection
       title="Sender IDs"
-      description="Approved and requested sender IDs live here, alongside their current eligibility state."
-      action={<Button variant="outlineDark">Shared sender available</Button>}
+      description="Add the sender names your workspace can use, then pick them directly during campaign creation."
     >
       <SenderIdRequestForm />
       <section className="rounded-lg border border-white/10 bg-[#121018]">

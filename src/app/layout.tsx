@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
 import {
   JetBrains_Mono,
-  Manrope,
+  Montserrat,
   Poppins,
 } from "next/font/google";
 import "./globals.css";
 
-const bodySans = Manrope({
+const bodySans = Poppins({
   variable: "--font-body",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
   fallback: ["Arial", "Helvetica", "sans-serif"],
 });
 
-const displaySans = Poppins({
+const displaySans = Montserrat({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
   fallback: ["Arial", "Helvetica", "sans-serif"],
 });

@@ -154,22 +154,22 @@ export const featureCards: Feature[] = [
 export const workflowSteps = [
   {
     title: "Create workspace",
-    detail: "Set organization name, use case, and sender-ID preference during onboarding.",
+    detail: "Set the sender, audience, and campaign context once so every send starts sharper.",
     icon: PlugsConnected,
   },
   {
     title: "Prepare contacts",
-    detail: "Import a list, review quality, and group recipients before writing a campaign.",
+    detail: "Clean the list, group the audience, and protect deliverability before the blast goes out.",
     icon: Database,
   },
   {
     title: "Launch campaign",
-    detail: "Write or improve the SMS, preview cost, then send now or schedule for later.",
+    detail: "Tighten the copy, preview the credit cost, and launch now or schedule for the right window.",
     icon: PaperPlaneTilt,
   },
   {
     title: "Track outcomes",
-    detail: "Watch delivery, failed numbers, credit movement, and follow-up actions.",
+    detail: "Read delivery results fast, spot failed numbers, and plan the next follow-up with confidence.",
     icon: ChartLineUp,
   },
 ];
@@ -208,6 +208,8 @@ export const pricingTiers: PricingTier[] = [
   },
 ];
 
+export const highestPublishedCreditBundle = 18_000;
+
 export const pricingComparison = [
   { feature: "Send-now campaigns", starter: "Yes", growth: "Yes", scale: "Yes" },
   { feature: "Scheduled campaigns", starter: "Limited", growth: "Yes", scale: "Yes" },
@@ -241,17 +243,17 @@ export const faqs: FAQItem[] = [
   {
     question: "Is this connected to a live SMS gateway?",
     answer:
-      "No. This phase is production-grade frontend only. The UI is shaped for gateway integration later, but no live SMS is sent.",
+      "Gateway routing is environment-driven. Cento keeps sender approval, wallet deductions, and campaign execution inside the same authenticated flow so teams can move from setup to live sending cleanly.",
   },
   {
-    question: "Why does onboarding ask for sender ID preferences?",
+    question: "Why does signup ask for sender and audience context?",
     answer:
-      "Sender IDs influence what users can send and when. Capturing that expectation early keeps the dashboard and campaign builder honest.",
+      "Cento uses the organization and campaign context collected at signup to keep sender posture, audience setup, and review expectations aligned from the first session.",
   },
   {
     question: "Can the wallet logic be connected later?",
     answer:
-      "Yes. The wallet screens separate top-ups, deductions, holds, and history so real payment and credit logic can map onto the UI cleanly.",
+      "The wallet is already modeled as a ledger. Top-ups, campaign deductions, and adjustments are recorded as explicit entries so finance and operations can audit what changed.",
   },
   {
     question: "Will AI send messages automatically?",
@@ -261,30 +263,7 @@ export const faqs: FAQItem[] = [
   {
     question: "Does the design support Ghana phone numbers?",
     answer:
-      "Yes. The contact workflow is built around import review, number quality states, and future Ghana number normalization.",
-  },
-];
-
-export const onboardingSteps = [
-  {
-    title: "Account",
-    detail: "Confirm the operator profile and preferred contact channel.",
-    fields: ["Full name", "Work email", "Phone number"],
-  },
-  {
-    title: "Workspace",
-    detail: "Name the organization and identify the main messaging use case.",
-    fields: ["Organization name", "Primary audience", "Country"],
-  },
-  {
-    title: "Sender ID",
-    detail: "Choose a shared sender option or prepare a branded sender request.",
-    fields: ["Preferred sender ID", "Approval documents", "Fallback sender"],
-  },
-  {
-    title: "First action",
-    detail: "Start by uploading contacts or drafting the first campaign.",
-    fields: ["Upload contacts", "Create campaign", "Buy credits"],
+      "Yes. Contacts are stored with status, suppression, and source context so Ghana-focused cleanup and routing rules can be enforced without breaking the campaign flow.",
   },
 ];
 

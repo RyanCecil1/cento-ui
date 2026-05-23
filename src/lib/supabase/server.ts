@@ -22,15 +22,17 @@ export function createServerSupabaseClient() {
 }
 
 export function createRequestSupabaseAuthClient(accessToken: string) {
+  const headers = accessToken
+    ? {
+        Authorization: `Bearer ${accessToken}`,
+      }
+    : undefined;
+
   return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-    global: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
+    global: headers ? { headers } : undefined,
   });
 }
