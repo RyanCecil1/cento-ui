@@ -33,6 +33,7 @@ export default async function NewCampaignPage() {
         templates={templates}
         walletBalance={walletBalance}
         timezone={viewer.workspace.timezone}
+        workspaceId={viewer.workspace.id}
       />
     </AppSection>
   );

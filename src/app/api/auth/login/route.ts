@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { setSessionToken } from "@/lib/auth/app-session";
-import { createDemoId, getDemoStore } from "@/lib/demo/store";
+import { createRequestSupabaseAuthClient } from "@/lib/supabase/server";
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -11,23 +11,17 @@ const LoginSchema = z.object({
 
 export async function POST(request: Request) {
   const payload = LoginSchema.parse(await request.json());
-  const store = getDemoStore();
-  const user = store.users.find(
-    (item) => item.email.toLowerCase() === payload.email.toLowerCase() && item.password === payload.password,
-  );
+  const authClient = createRequestSupabaseAuthClient("");
+  const { data, error } = await authClient.auth.signInWithPassword({
+    email: payload.email.toLowerCase(),
+    password: payload.password,
+  });
 
-  if (!user) {
+  if (error || !data.session?.access_token) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
   }
 
-  const token = createDemoId("session");
-  store.sessions.unshift({
-    token,
-    userId: user.id,
-    createdAt: new Date().toISOString(),
-  });
-  await setSessionToken(token);
+  await setSessionToken(data.session.access_token);
 
   return NextResponse.json({ next: "/app" }, { status: 200 });
 }
-

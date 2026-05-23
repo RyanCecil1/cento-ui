@@ -1,12 +1,12 @@
 import "server-only";
 
 import { resolveWorkspaceAudience } from "@/lib/contacts/repository";
-import { createDemoId, getDemoStore } from "@/lib/demo/store";
 import { getCurrentSmsProvider } from "@/lib/providers/current-provider";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getWorkspaceBalance, applyWalletDebit } from "@/lib/wallet/repository";
 import { getCampaign, getCampaignAudienceGroupIds, getCampaignEstimate, setCampaignState } from "@/lib/campaigns/repository";
 import { runFinalRecheck } from "@/lib/campaigns/recheck";
-import { createCampaignJob, listDueCampaignJobs } from "./repository";
+import { createCampaignJob, listDueCampaignJobs, updateCampaignJob } from "./repository";
 
 export async function queueCampaign(workspaceId: string, campaignId: string, scheduledFor: string | null) {
   const campaign = await setCampaignState(workspaceId, campaignId, "queued");
@@ -17,18 +17,20 @@ export async function queueCampaign(workspaceId: string, campaignId: string, sch
 export async function runDueCampaignJobs() {
   const dueJobs = await listDueCampaignJobs();
   const provider = getCurrentSmsProvider();
-  const store = getDemoStore();
+  const supabase = createServerSupabaseClient();
   const processed: string[] = [];
 
   for (const job of dueJobs) {
     const campaign = await getCampaign(job.workspaceId, job.campaignId);
     if (!campaign || campaign.state === "canceled" || campaign.state === "paused") {
-      job.state = "canceled";
+      await updateCampaignJob(job.id, { state: "canceled" });
       continue;
     }
 
-    job.state = "running";
-    job.startedAt = new Date().toISOString();
+    await updateCampaignJob(job.id, {
+      state: "running",
+      startedAt: new Date().toISOString(),
+    });
     campaign.state = "rechecking";
 
     const groupIds = await getCampaignAudienceGroupIds(job.workspaceId, campaign.id);
@@ -49,8 +51,10 @@ export async function runDueCampaignJobs() {
     if (!result.ok) {
       campaign.state = "needs_attention";
       campaign.failureReason = result.reason;
-      job.state = "failed";
-      job.failureReason = result.reason;
+      await updateCampaignJob(job.id, {
+        state: "failed",
+        failureReason: result.reason,
+      });
       continue;
     }
 
@@ -62,34 +66,58 @@ export async function runDueCampaignJobs() {
       recipients,
     });
 
-    const runId = createDemoId("run");
-    store.campaignRuns.unshift({
-      id: runId,
-      workspaceId: job.workspaceId,
-      campaignId: campaign.id,
-      jobId: job.id,
-      senderId: campaign.senderId,
-      renderedMessage: campaign.message,
-      recipientCount: estimate.recipients,
-      totalUnits: result.requiredUnits,
-      creditsUsed: result.requiredUnits,
-      createdAt: new Date().toISOString(),
-    });
+    const { data: run, error: runError } = await supabase
+      .from("campaign_runs")
+      .insert({
+        workspace_id: job.workspaceId,
+        campaign_id: campaign.id,
+        job_id: job.id,
+        exact_sender: campaign.senderId,
+        rendered_message_basis: campaign.message,
+        audience_snapshot: audience.deliverable.map((contact) => ({
+          id: contact.id,
+          fullName: contact.fullName,
+          phoneE164: contact.phoneE164,
+        })),
+        charge_basis: {
+          recipients: estimate.recipients,
+          unitsPerRecipient: estimate.unitsPerRecipient,
+        },
+        resolved_recipient_count: estimate.recipients,
+        deliverable_recipient_count: audience.summary.deliverable,
+        charge_units_total: result.requiredUnits,
+      })
+      .select("id")
+      .single();
 
-    for (const contact of audience.deliverable) {
-      const sent = sendResults.find((item) => item.recipient === contact.phoneE164);
-      store.messageAttempts.unshift({
-        id: createDemoId("attempt"),
-        workspaceId: job.workspaceId,
-        campaignId: campaign.id,
-        runId,
-        contactId: contact.id,
-        phoneE164: contact.phoneE164,
-        status: sent?.status === "sent" ? "sent" : "failed",
-        providerMessageId: sent?.providerMessageId ?? null,
-        failureReason: sent?.status === "failed" ? "provider_failed" : null,
-        createdAt: new Date().toISOString(),
-      });
+    if (runError || !run) {
+      throw new Error("Unable to create campaign run");
+    }
+
+    if (audience.deliverable.length > 0) {
+      const { error: attemptsError } = await supabase.from("message_attempts").insert(
+        audience.deliverable.map((contact) => {
+          const sent = sendResults.find((item) => item.recipient === contact.phoneE164);
+          return {
+            workspace_id: job.workspaceId,
+            campaign_id: campaign.id,
+            run_id: run.id,
+            contact_id: contact.id,
+            phone_e164: contact.phoneE164,
+            rendered_message: campaign.message,
+            rendered_units: estimate.unitsPerRecipient,
+            provider_message_id: sent?.providerMessageId ?? null,
+            provider_response: sent ?? {},
+            outcome: sent?.status === "sent" ? "sent" : "failed",
+            failed_at: sent?.status === "failed" ? new Date().toISOString() : null,
+            sent_at: sent?.status === "sent" ? new Date().toISOString() : null,
+          };
+        }),
+      );
+
+      if (attemptsError) {
+        throw new Error("Unable to write message attempts");
+      }
     }
 
     await applyWalletDebit(job.workspaceId, {
@@ -103,11 +131,12 @@ export async function runDueCampaignJobs() {
     campaign.creditsUsed = result.requiredUnits;
     campaign.failureReason = null;
     campaign.state = "completed";
-    job.state = "completed";
-    job.completedAt = new Date().toISOString();
+    await updateCampaignJob(job.id, {
+      state: "completed",
+      completedAt: new Date().toISOString(),
+    });
     processed.push(job.id);
   }
 
   return { processedJobs: processed.length, processed };
 }
-

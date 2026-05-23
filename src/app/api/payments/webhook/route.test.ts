@@ -4,23 +4,67 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { getDemoStore } from "@/lib/demo/store";
+const { applyWalletCredit } = vi.hoisted(() => ({
+  applyWalletCredit: vi.fn(),
+}));
+
+const paymentEvents = [
+  {
+    id: "topup_123",
+    workspace_id: "workspace_demo",
+    payment_reference: "ref_123",
+    metadata: {},
+  },
+];
+const seenProviderEvents = new Set<string>();
+
+vi.mock("@/lib/wallet/repository", () => ({
+  applyWalletCredit,
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  createServerSupabaseClient: vi.fn(() => ({
+    from(table: string) {
+      if (table !== "payment_events") {
+        throw new Error(`Unhandled table ${table}`);
+      }
+
+      return {
+        select() {
+          return {
+            eq(_field: string, _value: string) {
+              return {
+                eq(_field2: string, providerEventId: string) {
+                  return {
+                    maybeSingle: async () => ({
+                      data: seenProviderEvents.has(providerEventId) ? { id: providerEventId } : null,
+                    }),
+                  };
+                },
+                maybeSingle: async () => ({
+                  data: paymentEvents.find((event) => event.id === _value) ?? null,
+                  error: null,
+                }),
+              };
+            },
+          };
+        },
+        update() {
+          return {
+            eq: async () => ({ error: null }),
+          };
+        },
+      };
+    },
+  })),
+}));
+
 import { POST } from "./route";
 
 describe("POST /api/payments/webhook", () => {
   beforeEach(() => {
-    const store = getDemoStore();
-    store.paymentEvents = [];
-    store.topUpOrders = [
-      {
-        id: "topup_123",
-        workspaceId: "workspace_demo",
-        creditsPurchased: 8000,
-        amountGhs: 420,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-      },
-    ];
+    seenProviderEvents.clear();
+    applyWalletCredit.mockReset();
   });
 
   it("ignores duplicate payment confirmation events", async () => {
@@ -39,6 +83,8 @@ describe("POST /api/payments/webhook", () => {
       }),
     );
 
+    seenProviderEvents.add("evt_123");
+
     const second = await POST(
       new Request("http://localhost/api/payments/webhook", {
         method: "POST",
@@ -51,4 +97,3 @@ describe("POST /api/payments/webhook", () => {
     expect(second.status).toBe(200);
   });
 });
-

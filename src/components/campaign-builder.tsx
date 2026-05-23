@@ -10,7 +10,7 @@ import type {
   CampaignDraft,
   CampaignDraftAiComposeInputs,
 } from "@/lib/campaigns/types";
-import { aiSuggestions, campaignBuilderSteps } from "@/data/site";
+import { campaignBuilderSteps } from "@/data/site";
 import { Button } from "./ui";
 
 type BuilderSender = {
@@ -56,6 +56,7 @@ type CampaignBuilderProps = {
   contacts: BuilderContact[];
   walletBalance: number;
   timezone: string;
+  workspaceId: string;
 };
 
 type ValidationResult = {
@@ -134,6 +135,27 @@ function getCurrentTimestamp() {
   return Date.now();
 }
 
+function readStoredBuilderState(workspaceId: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(`cento:campaign-draft:${workspaceId}`);
+    if (!storedValue) {
+      return null;
+    }
+
+    return JSON.parse(storedValue) as {
+      step?: number;
+      draft?: CampaignDraft;
+    };
+  } catch {
+    window.localStorage.removeItem(`cento:campaign-draft:${workspaceId}`);
+    return null;
+  }
+}
+
 export function CampaignBuilder({
   senders,
   templates,
@@ -141,10 +163,20 @@ export function CampaignBuilder({
   contacts,
   walletBalance,
   timezone,
+  workspaceId,
 }: CampaignBuilderProps) {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<CampaignDraft>(() => emptyDraft(senders, templates));
+  const initialStoredState = readStoredBuilderState(workspaceId);
+  const [step, setStep] = useState(() =>
+    typeof initialStoredState?.step === "number"
+      ? Math.max(0, Math.min(campaignBuilderSteps.length - 1, initialStoredState.step))
+      : 0,
+  );
+  const [draft, setDraft] = useState<CampaignDraft>(() =>
+    initialStoredState?.draft
+      ? sanitizeRestoredDraft(initialStoredState.draft, senders, templates, groups)
+      : emptyDraft(senders, templates),
+  );
   const [pendingFilter, setPendingFilter] = useState<AudienceFilter>(emptyFilter);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -152,6 +184,14 @@ export function CampaignBuilder({
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [validationNow, setValidationNow] = useState(() => getCurrentTimestamp());
   const scheduleTimeZone = useMemo(() => resolveTimeZone(timezone), [timezone]);
+  const draftStorageKey = `cento:campaign-draft:${workspaceId}`;
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      draftStorageKey,
+      JSON.stringify({ step, draft }),
+    );
+  }, [draft, draftStorageKey, step]);
 
   useEffect(() => {
     if (step !== campaignBuilderSteps.length - 1 || !draft.scheduleAt) {
@@ -209,9 +249,6 @@ export function CampaignBuilder({
   const selectedSender = senders.find((sender) => sender.id === draft.senderId) ?? null;
   const aiCompose = draft.aiCompose ?? createAiComposeState();
   const aiComposeInputs = aiCompose.inputs;
-  const selectedCandidate = aiCompose.candidates.find(
-    (candidate) => candidate.id === aiCompose.selectedCandidateId,
-  );
   const selectedGroupNames = groups
     .filter((group) => draft.audience.groupIds.includes(group.id))
     .map((group) => group.name);
@@ -265,11 +302,9 @@ export function CampaignBuilder({
       draft.name.trim() &&
         draft.senderId &&
         aiComposeInputs.goal.trim() &&
-        aiComposeInputs.urgency.trim() &&
-        aiComposeInputs.offer.trim() &&
-        aiComposeInputs.cta.trim() &&
-        (aiComposeInputs.senderContext.trim() || suggestedSenderContext.trim()) &&
-        (aiComposeInputs.audienceSummary.trim() || liveAudienceSummary.trim()),
+        (draft.message.trim() ||
+          aiComposeInputs.offer.trim() ||
+          selectedTemplate?.body.trim()),
     );
 
   const validateDetails = (): ValidationResult => {
@@ -289,13 +324,9 @@ export function CampaignBuilder({
   };
 
   const validateCompose = (): ValidationResult => {
-    if (!aiCompose.selectedCandidateId) {
-      return {
-        valid: false,
-        message: "Generate 3 options and choose one message before continuing.",
-      };
+    if (!draft.message.trim()) {
+      return { valid: false, message: "Write the SMS body before continuing." };
     }
-    if (!draft.message.trim()) return { valid: false, message: "Refine the selected SMS body." };
     return { valid: true };
   };
 
@@ -325,6 +356,9 @@ export function CampaignBuilder({
   );
   const currentValidation = validations[step] ?? { valid: true };
   const canContinue = currentValidation.valid && !submitting;
+  const currentStepLabel = campaignBuilderSteps[step] ?? "Step";
+  const currentStepTitle = getStepTitle(step);
+  const currentStepDetail = getStepDetail(step);
 
   function toggleGroup(groupId: string) {
     setDraft((current) => ({
@@ -390,34 +424,17 @@ export function CampaignBuilder({
     }));
   }
 
-  function hydrateAiComposeContext() {
-    setGenerationError(null);
-    setDraft((current) => ({
-      ...current,
-      aiCompose: {
-        ...(current.aiCompose ?? createAiComposeState()),
-        inputs: {
-          ...(current.aiCompose?.inputs ?? createAiComposeInputs()),
-          senderContext:
-            current.aiCompose?.inputs.senderContext.trim() || suggestedSenderContext,
-          audienceSummary:
-            current.aiCompose?.inputs.audienceSummary.trim() || liveAudienceSummary,
-        },
-      },
-    }));
-  }
-
   async function handleGenerateCandidates() {
     if (!canGenerateCandidates) {
-      setGenerationError("Complete the campaign brief before generating options.");
+      setGenerationError("Add the message goal and at least a rough message before generating options.");
       return;
     }
 
     setIsGenerating(true);
     setGenerationError(null);
 
-    const senderContext = aiComposeInputs.senderContext.trim() || suggestedSenderContext;
-    const audienceContext = aiComposeInputs.audienceSummary.trim() || liveAudienceSummary;
+    const senderContext = suggestedSenderContext;
+    const audienceContext = liveAudienceSummary;
     const goalContext = [
       aiComposeInputs.goal.trim(),
       senderContext ? `Sender context: ${senderContext}` : "",
@@ -435,11 +452,15 @@ export function CampaignBuilder({
           audienceSummary: audienceContext,
           goal: goalContext,
           tone: aiComposeInputs.tone,
-          urgency: aiComposeInputs.urgency.trim(),
-          offer: aiComposeInputs.offer.trim(),
-          cta: aiComposeInputs.cta.trim(),
-          existingMessage: draft.message.trim() || selectedTemplate?.body.trim() || undefined,
-          senderContext,
+          urgency: aiComposeInputs.urgency.trim() || "Routine",
+          offer:
+            draft.message.trim() ||
+            aiComposeInputs.offer.trim() ||
+            selectedTemplate?.body.trim() ||
+            "",
+          cta: aiComposeInputs.cta.trim() || "Reply or act on this update.",
+          existingMessage:
+            draft.message.trim() || aiComposeInputs.offer.trim() || selectedTemplate?.body.trim() || undefined,
         }),
       });
       const data = (await response.json().catch(() => ({}))) as CampaignCopyResponse;
@@ -460,6 +481,11 @@ export function CampaignBuilder({
           ...(current.aiCompose ?? createAiComposeState()),
           inputs: {
             ...(current.aiCompose?.inputs ?? createAiComposeInputs()),
+            offer:
+              current.message.trim() ||
+              current.aiCompose?.inputs.offer ||
+              selectedTemplate?.body ||
+              "",
             senderContext,
             audienceSummary: audienceContext,
           },
@@ -541,6 +567,7 @@ export function CampaignBuilder({
         }
       }
 
+      window.localStorage.removeItem(draftStorageKey);
       router.push(`/app/campaigns/${savedCampaign.id}`);
       router.refresh();
     } catch {
@@ -580,10 +607,31 @@ export function CampaignBuilder({
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+    <div>
       <section className="app-shell-pane overflow-hidden rounded-[28px]">
-        <div className="app-shell-glass border-b border-[var(--app-border)] p-4">
-          <div className="flex flex-wrap gap-2">
+        <div className="app-shell-glass border-b border-[var(--app-border)] p-5">
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-2xl">
+                <p className="mono-number text-xs uppercase text-[var(--app-muted)]">
+                  {`Step ${step + 1} of ${campaignBuilderSteps.length}`}
+                </p>
+                <h2 className="mt-3 text-2xl font-medium tracking-[-0.03em] text-[var(--app-text)]">
+                  {currentStepTitle}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
+                  {currentStepDetail}
+                </p>
+              </div>
+              <div className="app-shell-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-[var(--app-text)]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white keep-white">
+                  {step + 1}
+                </span>
+                {currentStepLabel}
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-5">
             {campaignBuilderSteps.map((label, index) => {
               const isActive = step === index;
               const isDone = step > index;
@@ -593,23 +641,36 @@ export function CampaignBuilder({
                 <button
                   key={label}
                   type="button"
+                  aria-label={`Step ${index + 1}: ${label}`}
                   disabled={!isUnlocked}
                   onClick={() => handleStepChange(index)}
-                  className={`app-shell-chip flex h-10 items-center gap-2 rounded-full px-4 text-sm ${
+                  className={`rounded-[24px] border px-4 py-3 text-left transition ${
                     isActive
-                      ? "bg-primary text-white keep-white"
+                      ? "border-primary/60 bg-primary/12 text-[var(--app-text)] shadow-[0_20px_45px_-34px_rgba(93,54,197,0.95)]"
                       : isDone
-                        ? "bg-[var(--app-hover)] text-[var(--app-text)]"
-                        : "text-[var(--app-muted)]"
+                        ? "border-[var(--app-border)] bg-[var(--app-hover)] text-[var(--app-text)]"
+                        : "border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-muted)]"
                   }`}
                 >
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black/20 text-[11px]">
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold ${
+                      isActive
+                        ? "bg-primary text-white keep-white"
+                        : isDone
+                          ? "bg-[var(--app-text)] text-[var(--app-bg)]"
+                          : "bg-[var(--app-soft-fill)] text-[var(--app-muted)]"
+                    }`}
+                  >
                     {isDone ? <Check size={12} weight="bold" /> : index + 1}
                   </span>
-                  {label}
+                  <div className="mt-3">
+                    <p className="text-sm font-medium">{label}</p>
+                    <p className="mt-1 text-xs leading-5 opacity-80">{getStepMicrocopy(index)}</p>
+                  </div>
                 </button>
               );
             })}
+            </div>
           </div>
         </div>
 
@@ -756,106 +817,77 @@ export function CampaignBuilder({
           ) : null}
 
           {step === 2 ? (
-            <div className="grid gap-5 xl:grid-cols-[0.88fr_1.12fr]">
+            <div className="space-y-5">
               <section className="app-shell-glass rounded-[26px] p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="mono-number text-xs uppercase text-[var(--app-muted)]">
-                      Guided message studio
-                    </p>
-                    <h3 className="mt-3 text-xl font-medium text-[var(--app-text)]">
-                      Shape the intent before AI writes.
-                    </h3>
-                    <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--app-muted)]">
-                      Give the model a clean campaign brief, generate three SMS-safe options,
-                      then pick one before editing the final draft.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="app-shell-chip inline-flex h-10 items-center rounded-full px-4 text-sm text-[var(--app-text)]"
-                    onClick={hydrateAiComposeContext}
-                  >
-                    Use live campaign context
-                  </button>
+                <div>
+                  <p className="mono-number text-xs uppercase text-[var(--app-muted)]">
+                    Guided message studio
+                  </p>
+                  <h3 className="mt-3 text-xl font-medium text-[var(--app-text)]">
+                    Write the message first. Use AI only if you want help.
+                  </h3>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--app-muted)]">
+                    Keep this simple: write the main SMS in the large editor below. If you want
+                    faster options or a cleaner version, use the AI helper right under it.
+                  </p>
                 </div>
 
-                <div className="mt-5 grid gap-3">
-                  <Field label="Goal">
+                <div className="mt-5">
+                  <Field label="Main message">
+                    <textarea
+                      rows={8}
+                      value={draft.message}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setDraft((current) => ({ ...current, message: value }));
+                        updateAiComposeInput("offer", value);
+                      }}
+                      placeholder="Write the SMS your audience should receive. Example: PTA meeting starts tomorrow at 10 AM in the assembly hall. Please arrive by 9:45 AM."
+                    />
+                  </Field>
+                </div>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <Field label="Message goal">
                     <input
                       value={aiComposeInputs.goal}
                       onChange={(event) => updateAiComposeInput("goal", event.target.value)}
                       placeholder="Remind parents about tomorrow's meeting"
                     />
                   </Field>
-
                   <Field label="Tone">
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {composeToneOptions.map((option) => {
-                        const active = aiComposeInputs.tone === option.value;
-
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`rounded-[22px] border px-4 py-3 text-left transition ${
-                              active
-                                ? "border-primary/60 bg-primary/12 text-[var(--app-text)] shadow-[0_18px_36px_-28px_rgba(93,54,197,0.9)]"
-                                : "border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-muted)] hover:border-primary/30 hover:bg-[var(--app-hover)]"
-                            }`}
-                            onClick={() => updateAiComposeInput("tone", option.value)}
-                          >
-                            <p className="text-sm font-medium">{option.label}</p>
-                            <p className="mt-1 text-xs opacity-80">{option.detail}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </Field>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <Field label="Urgency">
-                      <input
-                        value={aiComposeInputs.urgency}
-                        onChange={(event) => updateAiComposeInput("urgency", event.target.value)}
-                        placeholder="Send this evening so parents see it tonight"
-                      />
-                    </Field>
-                    <Field label="Call to action">
-                      <input
-                        value={aiComposeInputs.cta}
-                        onChange={(event) => updateAiComposeInput("cta", event.target.value)}
-                        placeholder="Arrive by 9:45 AM"
-                      />
-                    </Field>
-                  </div>
-
-                  <Field label="Offer or announcement">
-                    <textarea
-                      rows={3}
-                      value={aiComposeInputs.offer}
-                      onChange={(event) => updateAiComposeInput("offer", event.target.value)}
-                      placeholder="PTA meeting starts at 10 AM in the assembly hall"
-                    />
-                  </Field>
-
-                  <Field label="Sender context">
-                    <textarea
-                      rows={3}
-                      value={aiComposeInputs.senderContext}
-                      onChange={(event) => updateAiComposeInput("senderContext", event.target.value)}
-                      placeholder={suggestedSenderContext}
-                    />
-                  </Field>
-
-                  <Field label="Audience summary">
-                    <textarea
-                      rows={3}
-                      value={aiComposeInputs.audienceSummary}
+                    <select
+                      value={aiComposeInputs.tone}
                       onChange={(event) =>
-                        updateAiComposeInput("audienceSummary", event.target.value)
+                        updateAiComposeInput(
+                          "tone",
+                          event.target.value as CampaignCopyTone,
+                        )
                       }
-                      placeholder={liveAudienceSummary}
+                    >
+                      {composeToneOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Urgency">
+                    <select
+                      value={aiComposeInputs.urgency}
+                      onChange={(event) => updateAiComposeInput("urgency", event.target.value)}
+                    >
+                      <option value="">Routine</option>
+                      <option value="Send this as a calm reminder.">Routine reminder</option>
+                      <option value="This should be seen today.">Needs attention today</option>
+                      <option value="This is urgent and needs immediate action.">Immediate action</option>
+                    </select>
+                  </Field>
+                  <Field label="Call to action">
+                    <input
+                      value={aiComposeInputs.cta}
+                      onChange={(event) => updateAiComposeInput("cta", event.target.value)}
+                      placeholder="Arrive by 9:45 AM"
                     />
                   </Field>
                 </div>
@@ -863,12 +895,9 @@ export function CampaignBuilder({
                 <div className="mt-5 rounded-[24px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-[var(--app-text)]">
-                        Generation checklist
-                      </p>
+                      <p className="text-sm font-medium text-[var(--app-text)]">AI helper</p>
                       <p className="mt-1 text-sm text-[var(--app-muted)]">
-                        Campaign name, sender, goal, urgency, offer, CTA, sender context, and
-                        audience framing all need to be present.
+                        AI uses your current message, sender, and selected audience automatically.
                       </p>
                     </div>
                     <Button
@@ -886,128 +915,87 @@ export function CampaignBuilder({
                 </div>
               </section>
 
-              <section className="space-y-4">
-                <div className="app-shell-highlight rounded-[26px] p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="mono-number text-xs uppercase text-[var(--app-muted)]">
-                        Candidate review
-                      </p>
-                      <h3 className="mt-3 text-xl font-medium text-[var(--app-text)]">
-                        Compare first, then refine.
-                      </h3>
-                    </div>
-                    <div className="app-shell-chip inline-flex items-center rounded-full px-4 py-2 text-sm text-[var(--app-text)]">
-                      {aiCompose.candidates.length}/3 options ready
-                    </div>
+              <section className="app-shell-highlight rounded-[26px] p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="mono-number text-xs uppercase text-[var(--app-muted)]">
+                      Candidate review
+                    </p>
+                    <h3 className="mt-3 text-xl font-medium text-[var(--app-text)]">
+                      Compare AI options if you generated them
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
+                      Pick any suggestion to replace the current message, then keep editing it.
+                    </p>
                   </div>
-
-                  {isGenerating ? (
-                    <div
-                      className="mt-5 rounded-[24px] border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] px-5 py-6 text-sm text-[var(--app-muted)]"
-                      aria-live="polite"
-                    >
-                      Writing three SMS-safe variants tuned to this campaign brief.
-                    </div>
-                  ) : aiCompose.candidates.length > 0 ? (
-                    <div className="mt-5 grid gap-3">
-                      {aiCompose.candidates.map((candidate) => {
-                        const isSelected = aiCompose.selectedCandidateId === candidate.id;
-
-                        return (
-                          <button
-                            key={candidate.id}
-                            type="button"
-                            aria-pressed={isSelected}
-                            aria-label={`Choose ${candidate.label}`}
-                            className={`rounded-[24px] border px-5 py-4 text-left transition ${
-                              isSelected
-                                ? "border-primary/70 bg-primary/12 shadow-[0_24px_48px_-34px_rgba(93,54,197,0.95)]"
-                                : "border-[var(--app-border)] bg-[var(--app-panel)] hover:border-primary/30 hover:bg-[var(--app-hover)]"
-                            }`}
-                            onClick={() => selectCandidate(candidate.id)}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="mono-number text-xs uppercase text-[var(--app-muted)]">
-                                  {candidate.label}
-                                </p>
-                                <p className="mt-3 text-sm leading-7 text-[var(--app-text)]">
-                                  {candidate.body}
-                                </p>
-                              </div>
-                              {isSelected ? (
-                                <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white keep-white">
-                                  Selected
-                                </span>
-                              ) : (
-                                <span className="text-xs font-medium text-[var(--app-muted)]">
-                                  Pick this draft
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="mt-5 rounded-[24px] border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] px-5 py-6">
-                      <p className="text-sm font-medium text-[var(--app-text)]">
-                        No candidates yet
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-                        Define the message brief on the left, then generate three distinct SMS
-                        options to compare before you touch the final draft.
-                      </p>
-                    </div>
-                  )}
+                  <div className="app-shell-chip inline-flex items-center rounded-full px-4 py-2 text-sm text-[var(--app-text)]">
+                    {aiCompose.candidates.length}/3 options ready
+                  </div>
                 </div>
 
-                <div className="app-shell-glass rounded-[26px] p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="mono-number text-xs uppercase text-[var(--app-muted)]">
-                        Final draft
-                      </p>
-                      <h3 className="mt-3 text-xl font-medium text-[var(--app-text)]">
-                        {selectedCandidate ? `${selectedCandidate.label} selected` : "Locked until selection"}
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-                        {selectedCandidate
-                          ? "Edit the chosen option before you continue to preview and schedule."
-                          : "Choose one of the AI candidates first. Manual editing unlocks only after selection."}
-                      </p>
-                    </div>
-                    <div className="app-shell-chip inline-flex rounded-full px-4 py-2 text-sm text-[var(--app-text)]">
-                      {selectedCandidate ? "Editing enabled" : "Selection required"}
-                    </div>
+                {isGenerating ? (
+                  <div
+                    className="mt-5 rounded-[24px] border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] px-5 py-6 text-sm text-[var(--app-muted)]"
+                    aria-live="polite"
+                  >
+                    Writing three SMS-safe variants tuned to this campaign.
                   </div>
+                ) : aiCompose.candidates.length > 0 ? (
+                  <div className="mt-5 grid gap-3 xl:grid-cols-3">
+                    {aiCompose.candidates.map((candidate) => {
+                      const isSelected = aiCompose.selectedCandidateId === candidate.id;
 
-                  <div className="mt-5">
-                    <Field label="Final message">
-                      <textarea
-                        rows={8}
-                        value={draft.message}
-                        disabled={!selectedCandidate}
-                        onChange={(event) =>
-                          setDraft((current) => ({
-                            ...current,
-                            message: event.target.value,
-                          }))
-                        }
-                        placeholder="Choose a candidate to unlock the final message editor."
-                      />
-                    </Field>
+                      return (
+                        <button
+                          key={candidate.id}
+                          type="button"
+                          aria-pressed={isSelected}
+                          aria-label={`Choose ${candidate.label}`}
+                          className={`rounded-[24px] border px-5 py-4 text-left transition ${
+                            isSelected
+                              ? "border-primary/70 bg-primary/12 shadow-[0_24px_48px_-34px_rgba(93,54,197,0.95)]"
+                              : "border-[var(--app-border)] bg-[var(--app-panel)] hover:border-primary/30 hover:bg-[var(--app-hover)]"
+                          }`}
+                          onClick={() => selectCandidate(candidate.id)}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="mono-number text-xs uppercase text-[var(--app-muted)]">
+                                {candidate.label}
+                              </p>
+                              <p className="mt-3 text-sm leading-7 text-[var(--app-text)]">
+                                {candidate.body}
+                              </p>
+                            </div>
+                            {isSelected ? (
+                              <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white keep-white">
+                                Using this
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
+                ) : (
+                  <div className="mt-5 rounded-[24px] border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] px-5 py-6">
+                    <p className="text-sm font-medium text-[var(--app-text)]">
+                      No AI suggestions yet
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
+                      You can continue with the message you wrote manually, or generate three
+                      options first.
+                    </p>
+                  </div>
+                )}
 
-                  <div className="mt-5 grid gap-4 md:grid-cols-3">
-                    <StatPanel label="Characters" value={`${draft.message.trim().length} chars`} />
-                    <StatPanel label="SMS units" value={`${getMessageUnits(draft.message)} unit(s)`} />
-                    <StatPanel
-                      label="Template variables"
-                      value={selectedTemplate?.variables.join(", ") || "None"}
-                    />
-                  </div>
+                <div className="mt-5 grid gap-4 md:grid-cols-3">
+                  <StatPanel label="Characters" value={`${draft.message.trim().length} chars`} />
+                  <StatPanel label="SMS units" value={`${getMessageUnits(draft.message)} unit(s)`} />
+                  <StatPanel
+                    label="Template variables"
+                    value={selectedTemplate?.variables.join(", ") || "None"}
+                  />
                 </div>
               </section>
             </div>
@@ -1086,63 +1074,6 @@ export function CampaignBuilder({
           </div>
         </div>
       </section>
-
-      <aside className="space-y-5">
-        <div className="app-shell-glass rounded-[26px] p-5">
-          <p className="mono-number text-xs uppercase text-white/36">Campaign summary</p>
-          <h3 className="mt-4 text-xl font-medium text-white">
-            {draft.name || "Untitled campaign"}
-          </h3>
-          <div className="mt-5 space-y-3">
-            <SummaryRow label="Audience" value={`${audienceSummary.deliverable} deliverable`} />
-            <SummaryRow label="SMS units" value={`${pricing.unitsPerRecipient} per recipient`} />
-            <SummaryRow label="Cost" value={`${pricing.totalCredits} credits`} />
-            <SummaryRow label="Balance after" value={`${walletBalance - pricing.totalCredits} credits`} />
-            <SummaryRow
-              label="Schedule"
-              value={
-                draft.scheduleAt
-                  ? readableDate(draft.scheduleAt, scheduleTimeZone)
-                  : "Send immediately"
-              }
-            />
-          </div>
-        </div>
-
-        <div className="app-shell-highlight rounded-[26px] p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-white">
-              <MagicWand size={17} weight="bold" />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-white">Refine selected draft</h3>
-              <p className="text-xs text-white/42">
-                Quick rewrite nudges unlock after you choose an AI candidate.
-              </p>
-            </div>
-          </div>
-          <div className="mt-5 grid gap-2">
-            {aiSuggestions.map((item) => (
-              <button
-                key={item}
-                type="button"
-                disabled={!selectedCandidate}
-                className="rounded-[18px] border border-[var(--app-border)] px-3 py-2 text-left text-sm text-white/70 transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-50"
-                onClick={() =>
-                  setDraft((current) => ({
-                    ...current,
-                    message: current.message
-                      ? `${current.message}\n\n${item}`
-                      : item,
-                  }))
-                }
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
     </div>
   );
 }
@@ -1162,20 +1093,62 @@ function Field({
   );
 }
 
+function getStepTitle(step: number) {
+  switch (step) {
+    case 0:
+      return "Set the campaign frame.";
+    case 1:
+      return "Lock the exact audience.";
+    case 2:
+      return "Write the message and use AI only if needed.";
+    case 3:
+      return "Review cost and delivery impact.";
+    case 4:
+      return "Choose when this campaign goes out.";
+    default:
+      return "Prepare the campaign.";
+  }
+}
+
+function getStepDetail(step: number) {
+  switch (step) {
+    case 0:
+      return "Name the campaign, choose the sender, and set the personalization defaults before any copy is written.";
+    case 1:
+      return "Use groups and filters to confirm who should receive this send and what quality issues still need attention.";
+    case 2:
+      return "Keep the core SMS simple and visible. AI can suggest cleaner or shorter variants, but it should never block the send.";
+    case 3:
+      return "Check the deliverable audience, message length, credit burn, and post-send balance before committing.";
+    case 4:
+      return "Queue the campaign immediately or schedule it in the workspace timezone so delivery timing stays predictable.";
+    default:
+      return "Prepare the campaign.";
+  }
+}
+
+function getStepMicrocopy(step: number) {
+  switch (step) {
+    case 0:
+      return "Name, sender, defaults";
+    case 1:
+      return "Groups, filters, quality";
+    case 2:
+      return "Message, AI help, draft";
+    case 3:
+      return "Recipients, units, credits";
+    case 4:
+      return "Immediate or scheduled";
+    default:
+      return "";
+  }
+}
+
 function StatPanel({ label, value }: { label: string; value: string }) {
   return (
     <div className="app-shell-glass rounded-[22px] p-4">
       <p className="mono-number text-xs uppercase text-[var(--app-muted)]">{label}</p>
       <p className="mt-3 text-sm font-medium text-[var(--app-text)]">{value}</p>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-3 last:border-b-0 last:pb-0">
-      <p className="text-sm text-white/42">{label}</p>
-      <p className="mono-number text-sm text-white">{value}</p>
     </div>
   );
 }
@@ -1231,7 +1204,13 @@ function parseZonedDateTimeValue(value: string, timeZone: string) {
 }
 
 function resolveCampaignCopyError(data: CampaignCopyResponse) {
-  return resolveRouteErrorMessage(data, "Unable to generate campaign options.");
+  const message = resolveRouteErrorMessage(data, "Unable to generate campaign options.");
+
+  if (message === "AI is not configured for this environment") {
+    return "AI help is not available here yet because the DeepSeek key is missing. You can still write and send the message manually.";
+  }
+
+  return message;
 }
 
 function resolveRouteErrorMessage(data: RouteResponse, fallbackMessage: string) {
@@ -1252,14 +1231,6 @@ function resolveTimeZone(timeZone: string) {
   } catch {
     return "UTC";
   }
-}
-
-function readableDate(value: string, timeZone: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone,
-  }).format(new Date(value));
 }
 
 function getTimeZoneParts(date: Date, timeZone: string) {
@@ -1303,4 +1274,41 @@ function getTimeZoneOffsetMilliseconds(date: Date, timeZone: string) {
   );
 
   return utcTimestamp - date.getTime();
+}
+
+function sanitizeRestoredDraft(
+  draft: CampaignDraft,
+  senders: BuilderSender[],
+  templates: BuilderTemplate[],
+  groups: BuilderGroup[],
+) {
+  const fallback = emptyDraft(senders, templates);
+  const validGroupIds = new Set(groups.map((group) => group.id));
+  const validSenderIds = new Set(senders.map((sender) => sender.id));
+  const validTemplateIds = new Set(templates.map((template) => template.id));
+
+  return {
+    ...fallback,
+    ...draft,
+    senderId: validSenderIds.has(draft.senderId) ? draft.senderId : fallback.senderId,
+    templateId:
+      draft.templateId && validTemplateIds.has(draft.templateId)
+        ? draft.templateId
+        : fallback.templateId,
+    audience: {
+      groupIds: (draft.audience?.groupIds ?? []).filter((groupId) =>
+        validGroupIds.has(groupId),
+      ),
+      filters: draft.audience?.filters ?? [],
+    },
+    personalizationDefaults: {
+      firstName:
+        draft.personalizationDefaults?.firstName ??
+        fallback.personalizationDefaults.firstName,
+      lastName:
+        draft.personalizationDefaults?.lastName ??
+        fallback.personalizationDefaults.lastName,
+    },
+    aiCompose: draft.aiCompose ?? fallback.aiCompose,
+  };
 }

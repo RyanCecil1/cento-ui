@@ -3,24 +3,20 @@ import {
   FeatureGrid,
   HeroSection,
   HowItWorks,
-  IndustryStrip,
   MarketingSection,
   MetricsRibbon,
-  PricingPreview,
   ReportBand,
   TrustBand,
 } from "@/components/marketing";
-import { FAQAccordion } from "@/components/faq-accordion";
 import { MarketingFooter, MarketingHeader } from "@/components/site-chrome";
-import { faqs, homepageMetrics } from "@/data/site";
 
 export default function HomePage() {
   return (
-    <>
+    <div className="marketing-root">
       <MarketingHeader />
-      <main className="flex-1">
+      <main className="marketing-home marketing-animated flex-1">
         <HeroSection />
-        <MetricsRibbon items={homepageMetrics} />
+        <MetricsRibbon />
         <TrustBand />
         <FeatureGrid />
         <HowItWorks />
@@ -32,18 +28,9 @@ export default function HomePage() {
         >
           <ReportBand />
         </MarketingSection>
-        <PricingPreview />
-        <IndustryStrip />
-        <MarketingSection
-          eyebrow="Answers before launch"
-          title="Questions teams ask before they trust a messaging platform"
-          description="This preview phase is focused on clarity. The product UI shows cost visibility, campaign status, and admin review surfaces long before live logic is added."
-        >
-          <FAQAccordion items={faqs} />
-        </MarketingSection>
         <CTASection />
       </main>
       <MarketingFooter />
-    </>
+    </div>
   );
 }

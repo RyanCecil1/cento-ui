@@ -30,18 +30,18 @@ type LoginPayload = {
 };
 
 const signupDefaults: SignupPayload = {
-  workspaceName: "GraceHub Communications",
-  email: "owner@example.com",
-  password: "Password123456",
-  fullName: "Workspace Owner",
-  phoneNumber: "+233240000000",
-  primaryAudience: "Church members",
-  useCase: "Member announcements and reminders",
+  workspaceName: "",
+  email: "",
+  password: "",
+  fullName: "",
+  phoneNumber: "",
+  primaryAudience: "",
+  useCase: "",
 };
 
 const loginDefaults: LoginPayload = {
-  email: "operator@cento.local",
-  password: "Password123456",
+  email: "",
+  password: "",
 };
 
 export function SessionForm(props: SessionFormProps) {
@@ -97,7 +97,7 @@ export function SessionForm(props: SessionFormProps) {
               onChange={(event) =>
                 setSignupValues((current) => ({ ...current, workspaceName: event.target.value }))
               }
-              placeholder="GraceHub Communications"
+              placeholder="North Ridge School"
               required
             />
           </Field>
@@ -108,7 +108,7 @@ export function SessionForm(props: SessionFormProps) {
               onChange={(event) =>
                 setSignupValues((current) => ({ ...current, email: event.target.value }))
               }
-              placeholder="owner@example.com"
+              placeholder="ops@yourorg.com"
               required
             />
           </Field>
@@ -119,7 +119,7 @@ export function SessionForm(props: SessionFormProps) {
                 onChange={(event) =>
                   setSignupValues((current) => ({ ...current, fullName: event.target.value }))
                 }
-                placeholder="Workspace Owner"
+                placeholder="Ama Ofori"
                 required
               />
             </Field>
@@ -129,7 +129,7 @@ export function SessionForm(props: SessionFormProps) {
                 onChange={(event) =>
                   setSignupValues((current) => ({ ...current, phoneNumber: event.target.value }))
                 }
-                placeholder="+233240000000"
+                placeholder="+233241234567"
                 required
               />
             </Field>
@@ -151,7 +151,7 @@ export function SessionForm(props: SessionFormProps) {
               onChange={(event) =>
                 setSignupValues((current) => ({ ...current, primaryAudience: event.target.value }))
               }
-              placeholder="Church members"
+              placeholder="Parents and guardians"
               required
             />
           </Field>
@@ -162,7 +162,7 @@ export function SessionForm(props: SessionFormProps) {
                 setSignupValues((current) => ({ ...current, useCase: event.target.value }))
               }
               rows={3}
-              placeholder="Member announcements and reminders"
+              placeholder="Weekly notices, fee reminders, and urgent schedule updates"
               required
             />
           </Field>
@@ -198,7 +198,7 @@ export function SessionForm(props: SessionFormProps) {
         {submitting
           ? "Working..."
           : props.mode === "signup"
-            ? "Continue to Onboarding"
+            ? "Create Workspace Account"
             : "Enter Workspace"}
       </Button>
     </form>

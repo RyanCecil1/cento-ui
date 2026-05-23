@@ -26,7 +26,7 @@ export default function AIWriterPage() {
   return (
     <AppSection
       title="AI message lab"
-      description="Use this page as a secondary support surface for copy experiments and prompt inspiration. The primary AI workflow now lives inside campaign creation where the final message, audience, cost, and approval stay connected."
+      description="Use this page when you want a quick nudge, a warmer version, or a shorter SMS before you build the real campaign."
       action={<Button href="/app/campaigns/new">Open campaign builder</Button>}
     >
       <div className="space-y-6">
@@ -35,11 +35,11 @@ export default function AIWriterPage() {
             <div className="max-w-3xl">
               <p className="mono-number text-xs uppercase text-primary">Secondary AI surface</p>
               <h2 className="mt-3 text-2xl font-medium text-[var(--app-text)]">
-                Explore message angles here, then finish the real work in campaign creation.
+                Explore message angles here, then move the winner into campaign creation.
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
-                This lab is useful when you want to test tone, shorten a message, or get unstuck.
-                It is not the system of record for final campaign decisions.
+                This lab is useful when you want to test tone, shorten a message, or get unstuck
+                without feeling buried in settings.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -56,7 +56,9 @@ export default function AIWriterPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="mono-number text-xs uppercase app-label">Message sandbox</p>
-                <h2 className="mt-3 text-xl font-medium text-[var(--app-text)]">Copy you can pressure-test</h2>
+                <h2 className="mt-3 text-xl font-medium text-[var(--app-text)]">
+                  Copy you can warm up fast
+                </h2>
               </div>
               <div className="rounded-full border app-border bg-[var(--app-soft-fill)] px-3 py-1">
                 <p className="mono-number text-[11px] uppercase app-label">Assistive only</p>
@@ -75,7 +77,7 @@ export default function AIWriterPage() {
               {["153 characters", "1 SMS unit", "Reminder tone"].map((item) => (
                 <div
                   key={item}
-                  className="rounded-2xl border app-border bg-[var(--app-soft-fill)] px-4 py-4"
+                  className="rounded-2xl border app-border bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(247,241,255,0.95)_100%)] px-4 py-4 shadow-[0_16px_28px_-24px_rgba(93,54,197,0.35)]"
                 >
                   <p className="text-sm text-[var(--app-muted-strong)]">{item}</p>
                 </div>
@@ -84,7 +86,10 @@ export default function AIWriterPage() {
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               {experimentationNotes.map((item) => (
-                <div key={item.label} className="rounded-2xl border app-border bg-[var(--app-soft-fill)] p-4">
+                <div
+                  key={item.label}
+                  className="rounded-2xl border app-border bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(247,241,255,0.92)_100%)] p-4 shadow-[0_18px_34px_-28px_rgba(93,54,197,0.34)]"
+                >
                   <p className="mono-number text-[11px] uppercase app-label">{item.label}</p>
                   <p className="mt-3 text-sm leading-6 text-[var(--app-muted-strong)]">{item.value}</p>
                 </div>
@@ -100,7 +105,7 @@ export default function AIWriterPage() {
                   <button
                     key={item}
                     type="button"
-                    className="rounded-2xl border app-border bg-[var(--app-soft-fill)] px-4 py-4 text-left text-sm leading-6 text-[var(--app-muted-strong)] transition hover:border-primary/50 hover:bg-[var(--app-hover)] hover:text-[var(--app-text)]"
+                    className="rounded-2xl border app-border bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(247,241,255,0.94)_100%)] px-4 py-4 text-left text-sm leading-6 text-[var(--app-muted-strong)] shadow-[0_18px_34px_-28px_rgba(93,54,197,0.3)] transition hover:border-primary/50 hover:bg-[var(--app-hover)] hover:text-[var(--app-text)]"
                   >
                     {item}
                   </button>
@@ -112,7 +117,10 @@ export default function AIWriterPage() {
               <p className="mono-number text-xs uppercase app-label">Useful experiments</p>
               <div className="mt-5 space-y-3">
                 {labUseCases.map((item) => (
-                  <div key={item} className="rounded-2xl border app-border bg-[var(--app-panel)] px-4 py-4">
+                  <div
+                    key={item}
+                    className="rounded-2xl border app-border bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(247,241,255,0.92)_100%)] px-4 py-4 shadow-[0_18px_34px_-28px_rgba(93,54,197,0.28)]"
+                  >
                     <p className="text-sm leading-6 text-[var(--app-muted-strong)]">{item}</p>
                   </div>
                 ))}

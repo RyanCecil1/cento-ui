@@ -16,38 +16,10 @@ const EnvSchema = z.object({
   DEEPSEEK_API_KEY: OptionalServerSecretSchema,
   SMS_PROVIDER: z.enum(["demo", "hubtel"]).default("demo"),
   PAYMENT_PROVIDER_WEBHOOK_SECRET: z.string().min(1),
-  HUBTEL_API_BASE_URL: z.string().url().optional(),
-  HUBTEL_CLIENT_ID: z.string().min(1).optional(),
-  HUBTEL_CLIENT_SECRET: z.string().min(1).optional(),
-  HUBTEL_SENDER_ID: z.string().min(1).optional(),
-}).superRefine((value, context) => {
-  if (value.SMS_PROVIDER !== "hubtel") {
-    return;
-  }
-
-  if (!value.HUBTEL_API_BASE_URL) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["HUBTEL_API_BASE_URL"],
-      message: "Hubtel API base URL is required when SMS_PROVIDER=hubtel",
-    });
-  }
-
-  if (!value.HUBTEL_CLIENT_ID) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["HUBTEL_CLIENT_ID"],
-      message: "Hubtel client ID is required when SMS_PROVIDER=hubtel",
-    });
-  }
-
-  if (!value.HUBTEL_CLIENT_SECRET) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["HUBTEL_CLIENT_SECRET"],
-      message: "Hubtel client secret is required when SMS_PROVIDER=hubtel",
-    });
-  }
+  HUBTEL_API_BASE_URL: OptionalServerSecretSchema,
+  HUBTEL_CLIENT_ID: OptionalServerSecretSchema,
+  HUBTEL_CLIENT_SECRET: OptionalServerSecretSchema,
+  HUBTEL_SENDER_ID: OptionalServerSecretSchema,
 });
 
 type Env = z.infer<typeof EnvSchema>;

@@ -164,15 +164,15 @@ describe("lazy env loading", () => {
     }
   });
 
-  it("requires Hubtel credentials only when the provider is switched to hubtel", () => {
-    expect(() =>
-      parseEnv({
-        NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
-        SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
-        SMS_PROVIDER: "hubtel",
-        PAYMENT_PROVIDER_WEBHOOK_SECRET: "webhook-secret",
-      }),
-    ).toThrow("Missing required environment variable");
+  it("defers Hubtel credential validation until the provider is actually used", () => {
+    const parsed = parseEnv({
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      SMS_PROVIDER: "hubtel",
+      PAYMENT_PROVIDER_WEBHOOK_SECRET: "webhook-secret",
+    });
+
+    expect(parsed.SMS_PROVIDER).toBe("hubtel");
   });
 });

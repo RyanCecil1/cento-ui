@@ -1,6 +1,5 @@
 import "server-only";
 
-import { createDemoId } from "@/lib/demo/store";
 import { env } from "@/lib/env";
 import type { SmsProvider } from "./sms-provider";
 import { createHubtelSmsProvider } from "./hubtel-provider";
@@ -10,7 +9,7 @@ const demoProvider: SmsProvider = {
     return input.recipients.map((recipient) => ({
       recipient,
       status: "sent" as const,
-      providerMessageId: createDemoId("msg"),
+      providerMessageId: crypto.randomUUID(),
     }));
   },
 };

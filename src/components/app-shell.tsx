@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Bell, Command, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import { appNavGroups } from "@/data/site";
-import { ThemeToggle } from "./theme-toggle";
+import { AppHeaderControls } from "./app-header-controls";
 
 const mobileNavItems = appNavGroups.flatMap((group) => group.items);
 
@@ -10,12 +9,19 @@ export function AppShell({
   subtitle,
   workspaceName,
   walletBalance,
+  notifications,
   children,
 }: {
   title: string;
   subtitle: string;
   workspaceName: string;
   walletBalance: number;
+  notifications: Array<{
+    id: string;
+    title: string;
+    detail: string;
+    href?: string;
+  }>;
   children: React.ReactNode;
 }) {
   return (
@@ -74,33 +80,10 @@ export function AppShell({
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">{subtitle}</p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="app-shell-chip flex h-11 items-center gap-3 rounded-full px-4 text-sm text-[var(--app-muted-2)]">
-                  <MagnifyingGlass size={17} />
-                  Search coming soon
-                </div>
-                <div className="flex items-center gap-2">
-                  <ThemeToggle compact />
-                  <button
-                    type="button"
-                    className="app-shell-chip flex h-11 w-11 items-center justify-center rounded-full text-[var(--app-muted)] opacity-70"
-                    aria-label="Notifications panel coming soon"
-                    title="Notifications panel coming soon"
-                    disabled
-                  >
-                    <Bell size={17} />
-                  </button>
-                  <button
-                    type="button"
-                    className="app-shell-chip flex h-11 w-11 items-center justify-center rounded-full text-[var(--app-muted)] opacity-70"
-                    aria-label="Command palette coming soon"
-                    title="Command palette coming soon"
-                    disabled
-                  >
-                    <Command size={17} />
-                  </button>
-                </div>
-              </div>
+              <AppHeaderControls
+                workspaceName={workspaceName}
+                notifications={notifications}
+              />
             </div>
 
             <div className="mt-4 lg:hidden">

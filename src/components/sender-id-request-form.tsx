@@ -39,7 +39,7 @@ export function SenderIdRequestForm() {
 
   return (
     <form className="rounded-lg app-card p-5" onSubmit={handleSubmit}>
-      <p className="mono-number text-xs uppercase app-label">Request branded sender</p>
+      <p className="mono-number text-xs uppercase app-label">Add sender ID</p>
       <div className="mt-4 grid gap-4">
         <label className="grid gap-2 text-sm text-[var(--app-text)]">
           <span className="mono-number text-[10px] uppercase app-label">Sender name</span>
@@ -51,18 +51,18 @@ export function SenderIdRequestForm() {
           />
         </label>
         <label className="grid gap-2 text-sm text-[var(--app-text)]">
-          <span className="mono-number text-[10px] uppercase app-label">Reason or note</span>
+          <span className="mono-number text-[10px] uppercase app-label">Note</span>
           <textarea
             value={values.note}
             onChange={(event) => setValues((current) => ({ ...current, note: event.target.value }))}
             rows={3}
-            placeholder="Use this sender for church member reminders and notices."
+            placeholder="Main sender for parent notices and reminders."
             required
           />
         </label>
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         <Button type="submit" variant="dark" disabled={submitting}>
-          {submitting ? "Submitting..." : "Submit request"}
+          {submitting ? "Saving..." : "Save sender ID"}
         </Button>
       </div>
     </form>

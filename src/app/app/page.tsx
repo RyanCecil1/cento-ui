@@ -74,21 +74,28 @@ export default async function AppOverviewPage() {
             </Button>
           </div>
           <div className="divide-y divide-[var(--app-border)]">
-            {recentCampaigns.map((item) => (
-              <div
-                key={item.id}
-                className="grid gap-3 px-5 py-4 text-sm md:grid-cols-[1.35fr_0.75fr_0.85fr_0.75fr_0.65fr]"
-              >
-                <div>
-                  <p className="font-medium text-[var(--app-text)]">{item.name}</p>
-                  <p className="mt-1 text-xs app-label">{item.audienceFilterSummary}</p>
+            {recentCampaigns.length > 0 ? (
+              recentCampaigns.map((item) => (
+                <div
+                  key={item.id}
+                  className="grid gap-3 px-5 py-4 text-sm md:grid-cols-[1.35fr_0.75fr_0.85fr_0.75fr_0.65fr]"
+                >
+                  <div>
+                    <p className="font-medium text-[var(--app-text)]">{item.name}</p>
+                    <p className="mt-1 text-xs app-label">{item.audienceFilterSummary}</p>
+                  </div>
+                  <InfoCell label="Status" value={item.state.replaceAll("_", " ")} />
+                  <InfoCell label="When" value={formatShortDateTime(item.scheduleAt ?? item.updatedAt)} />
+                  <InfoCell label="Recipients" value={formatNumber(item.estimatedRecipients)} />
+                  <InfoCell label="Cost" value={formatCredits(item.estimatedCredits)} />
                 </div>
-                <InfoCell label="Status" value={item.state.replaceAll("_", " ")} />
-                <InfoCell label="When" value={formatShortDateTime(item.scheduleAt ?? item.updatedAt)} />
-                <InfoCell label="Recipients" value={formatNumber(item.estimatedRecipients)} />
-                <InfoCell label="Cost" value={formatCredits(item.estimatedCredits)} />
-              </div>
-            ))}
+              ))
+            ) : (
+              <EmptyStatePanel
+                title="No campaigns yet"
+                detail="The workspace is live, but nothing has been drafted or queued yet. Start with a first campaign or import a contact list first."
+              />
+            )}
           </div>
         </section>
 
@@ -117,21 +124,29 @@ export default async function AppOverviewPage() {
           <section className="rounded-lg app-card p-5">
             <p className="mono-number text-xs uppercase app-label">Wallet activity</p>
             <div className="mt-5 space-y-3">
-              {walletEntries.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-4 border-b app-border pb-3 last:border-b-0 last:pb-0"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-[var(--app-text)]">{item.reason}</p>
-                    <p className="mt-1 text-xs app-label">{item.meta}</p>
+              {walletEntries.length > 0 ? (
+                walletEntries.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-4 border-b app-border pb-3 last:border-b-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-[var(--app-text)]">{item.reason}</p>
+                      <p className="mt-1 text-xs app-label">{item.meta}</p>
+                    </div>
+                    <p className="mono-number text-sm text-[var(--app-text)]">
+                      {item.direction === "credit" ? "+" : "-"}
+                      {formatCredits(item.units)}
+                    </p>
                   </div>
-                  <p className="mono-number text-sm text-[var(--app-text)]">
-                    {item.direction === "credit" ? "+" : "-"}
-                    {formatCredits(item.units)}
-                  </p>
-                </div>
-              ))}
+                ))
+              ) : (
+                <EmptyStatePanel
+                  title="No wallet movement yet"
+                  detail="Top-ups, deductions, and adjustments will appear here as soon as the first payment or campaign event is recorded."
+                  compact
+                />
+              )}
             </div>
           </section>
         </div>
@@ -145,6 +160,27 @@ function InfoCell({ label, value }: { label: string; value: string }) {
     <div>
       <p className="mono-number text-[10px] uppercase app-label">{label}</p>
       <p className="mt-2 text-sm app-muted-strong">{value}</p>
+    </div>
+  );
+}
+
+function EmptyStatePanel({
+  title,
+  detail,
+  compact = false,
+}: {
+  title: string;
+  detail: string;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={`m-5 rounded-[22px] border border-dashed border-[var(--app-border)] bg-[var(--app-soft-fill)] ${
+        compact ? "px-4 py-5" : "px-5 py-8"
+      }`}
+    >
+      <p className="text-sm font-medium text-[var(--app-text)]">{title}</p>
+      <p className="mt-2 max-w-xl text-sm leading-6 app-muted">{detail}</p>
     </div>
   );
 }
